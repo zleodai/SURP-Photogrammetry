@@ -1,7 +1,5 @@
 module github.com/zleodai/SURP-Photogrammetry
-require modules/mod1 v1.0.0
-replace modules/mod1 => ./modules/mod1
-require modules/mod2 v1.0.0
-replace modules/mod2 => ./modules/mod2
+require modules/pointCloudDecoder v1.0.0
+replace modules/pointCloudDecoder => ./modules/pointCloudDecoder
 
 go 1.22.3

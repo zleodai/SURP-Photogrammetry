@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"modules/mod1"
-	"modules/mod2"
+	"modules/pointCloudDecoder"
+	"strconv"
 )
 
+var jsonFilePath string = "./example_files/SeaverSignPCJSON.json"
+
 func main() {
-	fmt.Println("Running Program")
-	mod1.Test()
-	mod2.Test()
-	fmt.Println("Program Success")
+	var data pointCloudDecoder.PointCloud = pointCloudDecoder.DecodeFromPath(jsonFilePath)
+	fmt.Println("Data Structure Size: " + strconv.Itoa(len(data.Structures)))
 }
