@@ -71,6 +71,16 @@ type Observation struct {
 	Scale         string   `json:"scale"`
 }
 
+type PointData struct {
+	Points []Point `json:"points"`
+}
+
+type Point struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
 func DecodeFromRawJsonFromPath(jsonFilePath string) PointCloud {
 	jsonFile, err := os.ReadFile(jsonFilePath)
 	check(err)
@@ -80,6 +90,17 @@ func DecodeFromRawJsonFromPath(jsonFilePath string) PointCloud {
 	json.Unmarshal(jsonFile, &pointCloudData)
 
 	return pointCloudData
+}
+
+func DecodeFromFloatJsonFromPath(jsonFilePath string) PointData {
+	jsonFile, err := os.ReadFile(jsonFilePath)
+	check(err)
+
+	var pointData PointData
+
+	json.Unmarshal(jsonFile, &pointData)
+
+	return pointData
 }
 
 func GenerateFloatJson(jsonFilePath string, jsonFileName string) string {
