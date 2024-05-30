@@ -1,13 +1,24 @@
 package voxelMesher
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"modules/pointCloudDecoder"
 	"os"
 	"runtime"
-	"strconv"
 )
+
+type pointVal struct {
+	X     int
+	Y     int
+	Z     int
+	Value int
+}
+
+type pointList struct {
+	Points []pointVal
+}
 
 func Test() byte {
 	return 0
@@ -41,7 +52,7 @@ func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) {
 		voxels[xIndex][yIndex][zIndex] += 1
 	}
 
-	// GenerateVoxelJson(voxels, voxelSize)
+	//GenerateVoxelJson(voxels, voxelSize)
 
 	runtime.GC()
 }
@@ -51,43 +62,20 @@ func GenerateVoxelJson(voxels [][][]int, voxelSize float64) {
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
 	}
-	defer file.Close()
 
-	_, errs = file.WriteString("{\"points\": \n	[")
-	check(errs)
+	enc := json.NewEncoder(file)
+	cleanedPoints := []pointVal{}
 
 	for xIndex, xArray := range voxels {
 		for yIndex, yArray := range xArray {
 			for zIndex, Value := range yArray {
-				if Value != 0 || xIndex == len(voxels)-1 && yIndex == len(xArray)-1 && zIndex == len(yArray)-1 {
-					_, errs = file.WriteString("\n		{")
-					check(errs)
-
-					var xValue float64 = float64(xIndex) * voxelSize
-					var yValue float64 = float64(yIndex) * voxelSize
-					var zValue float64 = float64(zIndex) * voxelSize
-
-					_, errs = file.WriteString("\n			\"x\": " + strconv.FormatFloat(xValue, 'f', -1, 64) + ",")
-					check(errs)
-					_, errs = file.WriteString("\n			\"y\": " + strconv.FormatFloat(yValue, 'f', -1, 64) + ",")
-					check(errs)
-					_, errs = file.WriteString("\n			\"z\": " + strconv.FormatFloat(zValue, 'f', -1, 64) + ",")
-					check(errs)
-					_, errs = file.WriteString("\n			\"Value\": " + strconv.Itoa(Value))
-					check(errs)
-
-					if xIndex == len(voxels)-1 && yIndex == len(xArray)-1 && zIndex == len(yArray)-1 {
-						_, errs = file.WriteString("\n		}")
-						check(errs)
-					} else {
-						_, errs = file.WriteString("\n		},")
-						check(errs)
-					}
+				if Value != 0 {
+					point := pointVal{X: xIndex, Y: yIndex, Z: zIndex, Value: Value}
+					cleanedPoints = append(cleanedPoints, point)
 				}
 			}
 		}
 	}
 
-	_, errs = file.WriteString("\n	]\n}")
-	check(errs)
+	enc.Encode(pointList{Points: cleanedPoints})
 }
