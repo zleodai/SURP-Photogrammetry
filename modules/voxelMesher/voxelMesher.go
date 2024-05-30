@@ -30,7 +30,7 @@ func check(e error) {
 	}
 }
 
-func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) {
+func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) [][][]int {
 	var xSize int = int(math.Floor(math.Abs(xArray[0].X-xArray[len(xArray)-1].X) / voxelSize))
 	var ySize int = int(math.Floor(math.Abs(yArray[0].Y-yArray[len(yArray)-1].Y) / voxelSize))
 	var zSize int = int(math.Floor(math.Abs(zArray[0].Z-zArray[len(zArray)-1].Z) / voxelSize))
@@ -38,10 +38,10 @@ func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) {
 	fmt.Println("Total Voxel Amount:", xSize*ySize*zSize)
 
 	voxels := make([][][]int, xSize+1)
-	for yIndex, _ := range voxels {
-		voxels[yIndex] = make([][]int, ySize+1)
-		for zIndex, _ := range voxels[yIndex] {
-			voxels[yIndex][zIndex] = make([]int, zSize+1)
+	for i := 0; i < len(voxels); i++ {
+		voxels[i] = make([][]int, ySize+1)
+		for j := 0; j < len(voxels[i]); j++ {
+			voxels[i][j] = make([]int, zSize+1)
 		}
 	}
 
@@ -52,12 +52,54 @@ func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) {
 		voxels[xIndex][yIndex][zIndex] += 1
 	}
 
-	//GenerateVoxelJson(voxels, voxelSize)
+	//GenerateVoxelJson(voxels)
 
 	runtime.GC()
+	return voxels
 }
 
-func GenerateVoxelJson(voxels [][][]int, voxelSize float64) {
+func MinMaxMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelSize float64) [][][]int {
+	var xSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / voxelSize))
+	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelSize))
+	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelSize))
+	fmt.Println("Voxel Grid X, Y, Z:", xSize, ySize, zSize)
+	fmt.Println("Total Voxel Amount:", xSize*ySize*zSize)
+
+	voxels := make([][][]int, xSize+1)
+	for i := 0; i < len(voxels); i++ {
+		voxels[i] = make([][]int, ySize+1)
+		for j := 0; j < len(voxels[i]); j++ {
+			voxels[i][j] = make([]int, zSize+1)
+		}
+	}
+
+	for _, point := range points {
+		xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / voxelSize))
+		yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / voxelSize))
+		zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / voxelSize))
+		voxels[xIndex][yIndex][zIndex] += 1
+	}
+
+	//GenerateVoxelJson(voxels)
+
+	runtime.GC()
+	return voxels
+}
+
+
+
+
+func IterativeMesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelStartSize, voxelEndSize float64, Iterations int) {
+	//masterPoints := [][][]int{}
+	decreasingAmt := (voxelStartSize - voxelEndSize) / float64(Iterations)
+	voxelSize := voxelStartSize
+	for i := 0; i < Iterations; i++ {
+		Mesh(xArray, yArray, zArray, voxelSize)
+		voxelSize -= decreasingAmt
+	}
+}
+
+func GenerateVoxelJson(voxels [][][]int) {
 	file, errs := os.Create("VoxelMatrix.JSON")
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())

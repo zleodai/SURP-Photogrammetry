@@ -54,6 +54,36 @@ func (pq *PriorityQueue) update(item *HeapItem, value pointCloudDecoder.Point, p
 	heap.Fix(pq, item.index)
 }
 
+func MinMaxPoints(pointData pointCloudDecoder.PointData) ([2]float64, [2]float64, [2]float64) {
+	var points []pointCloudDecoder.Point = pointData.Points
+
+	xMinMax := [2]float64{0, 0}
+	yMinMax := [2]float64{0, 0}
+	zMinMax := [2]float64{0, 0}
+
+	for _, point := range points {
+		if point.X < xMinMax[0] {
+			xMinMax[0] = point.X
+		}
+		if point.X > xMinMax[1] {
+			xMinMax[1] = point.X
+		}
+		if point.Y < yMinMax[0] {
+			yMinMax[0] = point.Y
+		}
+		if point.Y > yMinMax[1] {
+			yMinMax[1] = point.Y
+		}
+		if point.Z < zMinMax[0] {
+			zMinMax[0] = point.Z
+		}
+		if point.Z > zMinMax[1] {
+			zMinMax[1] = point.Z
+		}
+	}
+	return xMinMax, yMinMax, zMinMax
+}
+
 func SortPointData(pointData pointCloudDecoder.PointData) ([]pointCloudDecoder.Point, []pointCloudDecoder.Point, []pointCloudDecoder.Point) {
 	var points []pointCloudDecoder.Point = pointData.Points
 

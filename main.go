@@ -36,6 +36,8 @@ func main() {
 	// fmt.Printf("\nyMaxValue: %s", strconv.FormatFloat(yArray[len(yArray)-1].Y, 'f', -1, 64))
 	// fmt.Printf("\nzMinValue: %s", strconv.FormatFloat(zArray[0].Z, 'f', -1, 64))
 	// fmt.Printf("\nzMaxValue: %s", strconv.FormatFloat(zArray[len(zArray)-1].Z, 'f', -1, 64))
-	xArray, yArray, zArray := pointSorter.SortPointData(pointData)
-	voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
+	// xArray, yArray, zArray := pointSorter.SortPointData(pointData)
+	// voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
+	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
+	voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize)
 }
