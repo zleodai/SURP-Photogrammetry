@@ -114,16 +114,17 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 		if voxelSize < math.Abs(xMinMax[0]-xMinMax[1])/minimumVoxelAmount && voxelSize < math.Abs(yMinMax[0]-yMinMax[1])/minimumVoxelAmount && voxelSize < math.Abs(zMinMax[0]-zMinMax[1])/minimumVoxelAmount {
 			currVoxels := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, voxelSize)
 
-			numSmallVoxels := math.Pow(float64(scaleFactor), float64(Iterations-i))
+			currScaleFactor := math.Pow(float64(scaleFactor), float64(Iterations-i-1))
+			numSmallVoxels := math.Pow(currScaleFactor, 3)
 
-			weight := math.Pow(0.15, float64(Iterations-i-1))
+			weight := math.Pow(0.5, float64(Iterations-i-1))
 
-			fmt.Printf("\nWeight: %s, Iteration: %s\n", strconv.FormatFloat(weight, 'f', -1, 64), strconv.Itoa(i))
+			fmt.Printf("Weight: %s, Iteration: %s, NumSmallVoxel: %f\n\n", strconv.FormatFloat(weight, 'f', -1, 64), strconv.Itoa(i), currScaleFactor)
 
 			for x, yArray := range masterVoxels {
 				for y, zArray := range yArray {
 					for z := 0; z < len(zArray); z++ {
-						masterVoxels[x][y][z] += float64(currVoxels[int(x/int(numSmallVoxels))][int(y/int(numSmallVoxels))][int(z/int(numSmallVoxels))]) / (math.Pow(numSmallVoxels, 3)) * weight
+						masterVoxels[x][y][z] += float64(currVoxels[int(x/int(currScaleFactor))][int(y/int(currScaleFactor))][int(z/int(currScaleFactor))]) / numSmallVoxels * weight
 					}
 				}
 			}
@@ -140,7 +141,7 @@ func GenerateVoxelJson(voxels [][][]float64, voxelSize float64) {
 		panic("Failed to write to file:" + errs.Error())
 	}
 
-	const voxelValueThreshold = 0
+	const voxelValueThreshold = 0.25
 
 	enc := json.NewEncoder(file)
 	cleanedPoints := []pointVal{}
