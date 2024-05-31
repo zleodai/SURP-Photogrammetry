@@ -15,7 +15,7 @@ import (
 // var convertedJsonFileName string = "pointCloud.JSON"
 var convertedJsonFilePath string = "./pointCloud.JSON"
 
-var defaultVoxelSize float64 = 1
+var defaultVoxelSize float64 = 0.05
 
 func main() {
 	// commented line for going from meshroom json data to a cleaned up version this program uses
@@ -39,5 +39,5 @@ func main() {
 	// xArray, yArray, zArray := pointSorter.SortPointData(pointData)
 	// voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
 	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
-	voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize)
+	voxelMesher.IterativeMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, 2, 2)
 }
