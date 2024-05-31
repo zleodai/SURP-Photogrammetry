@@ -88,15 +88,35 @@ func MinMaxMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder
 
 
 
+func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelEndSize float64, Iterations, scaleFactor int) {
+	var xSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / voxelEndSize))
+	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelEndSize))
+	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelEndSize))
 
-func IterativeMesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelStartSize, voxelEndSize float64, Iterations int) {
-	//masterPoints := [][][]int{}
-	decreasingAmt := (voxelStartSize - voxelEndSize) / float64(Iterations)
-	voxelSize := voxelStartSize
-	for i := 0; i < Iterations; i++ {
-		Mesh(xArray, yArray, zArray, voxelSize)
-		voxelSize -= decreasingAmt
+	masterVoxels := make([][][]int, xSize+1)
+	for i := 0; i < len(masterVoxels); i++ {
+		masterVoxels[i] = make([][]int, ySize+1)
+		for j := 0; j < len(masterVoxels[i]); j++ {
+			masterVoxels[i][j] = make([]int, zSize+1)
+		}
 	}
+	
+	voxelSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations))
+	for i := 0; i < Iterations; i++ {
+		currVoxels := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, voxelSize)
+
+		numSmallVoxels := math.Pow(float64(scaleFactor), float64(Iterations - i))
+
+		for x, yArray := range masterVoxels {
+			for y, zArray := range yArray {
+				for z := 0; z < len(zArray); z++ {
+					masterVoxels[x][y][z] += currVoxels[int(x / int(numSmallVoxels))][int(y / int(numSmallVoxels))][int(z/int(numSmallVoxels))]
+				}
+			}
+		}
+		voxelSize /= float64(scaleFactor)
+	}
+	GenerateVoxelJson(masterVoxels)
 }
 
 func GenerateVoxelJson(voxels [][][]int) {
