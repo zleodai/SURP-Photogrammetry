@@ -108,8 +108,7 @@ func GenerateFloatJson(jsonFilePath string, jsonFileName string) string {
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
 	}
-	defer file.Close()
-
+	
 	var data PointCloud = DecodeFromRawJsonFromPath(jsonFilePath)
 
 	enc := json.NewEncoder(file)
