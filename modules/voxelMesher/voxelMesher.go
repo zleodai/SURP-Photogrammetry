@@ -94,11 +94,11 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 
 	const minVoxelThreshold = 8
 
-	masterVoxels := make([][][]float32, xSize+Iterations)
+	masterVoxels := make([][][]float32, xSize+Iterations+1)
 	for i := 0; i < len(masterVoxels); i++ {
-		masterVoxels[i] = make([][]float32, ySize+Iterations)
+		masterVoxels[i] = make([][]float32, ySize+Iterations+1)
 		for j := 0; j < len(masterVoxels[i]); j++ {
-			masterVoxels[i][j] = make([]float32, zSize+Iterations)
+			masterVoxels[i][j] = make([]float32, zSize+Iterations+1)
 		}
 	}
 
@@ -162,7 +162,7 @@ func GenerateVoxelJson(voxels [][][]float32, voxelSize float64) {
 		panic("Failed to write to file:" + errs.Error())
 	}
 
-	const voxelValueThreshold = 0.01
+	const voxelValueThreshold = 0
 
 	enc := json.NewEncoder(file)
 	cleanedPoints := []pointVal{}

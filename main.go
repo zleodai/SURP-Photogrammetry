@@ -39,5 +39,5 @@ func main() {
 	// xArray, yArray, zArray := pointSorter.SortPointData(pointData)
 	// voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
 	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
-	voxelMesher.IterativeMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, 1, 1)
+	voxelMesher.IterativeMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, 2, 2)
 }
