@@ -94,33 +94,27 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 
 	const minimumVoxelAmount = 8
 
-	masterVoxels := make([][][]float64, xSize+1)
+	masterVoxels := make([][][]float64, xSize+Iterations)
 	for i := 0; i < len(masterVoxels); i++ {
-		masterVoxels[i] = make([][]float64, ySize+1)
+		masterVoxels[i] = make([][]float64, ySize+Iterations)
 		for j := 0; j < len(masterVoxels[i]); j++ {
-			masterVoxels[i][j] = make([]float64, zSize+1)
+			masterVoxels[i][j] = make([]float64, zSize+Iterations)
 		}
 	}
 
-	fmt.Printf("\nX Max/Min: %s/%s, Y Max/Min: %s/%s, Z Max/Min: %s/%s\n", strconv.FormatFloat(xMinMax[0], 'f', -1, 64), strconv.FormatFloat(xMinMax[1], 'f', -1, 64), strconv.FormatFloat(yMinMax[0], 'f', -1, 64), strconv.FormatFloat(yMinMax[1], 'f', -1, 64), strconv.FormatFloat(zMinMax[0], 'f', -1, 64), strconv.FormatFloat(zMinMax[1], 'f', -1, 64))
-
-	fmt.Printf("\nx bounds: %s, y bounds: %s, z bounds: %s\n", strconv.FormatFloat(math.Abs(xMinMax[0]-xMinMax[1])/minimumVoxelAmount, 'f', -1, 64), strconv.FormatFloat(math.Abs(yMinMax[0]-yMinMax[1])/minimumVoxelAmount, 'f', -1, 64), strconv.FormatFloat(math.Abs(zMinMax[0]-zMinMax[1])/minimumVoxelAmount, 'f', -1, 64))
-
-	//voxelSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations-1))
 	for _, point := range points {
 		for i := 0; i < Iterations; i++ {
-			size := math.Pow(float64(scaleFactor), float64(i-1))
-			xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / float64(size)))
-			yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / float64(size)))
-			zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / float64(size)))
+			size := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations-1-i))
+			xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / size))
+			yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / size))
+			zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / size))
 
 			subVoxelsAmt := int(size / voxelEndSize)
-
 			if size != voxelEndSize {
-				for x := xIndex * subVoxelsAmt; x < (xIndex + 1) * subVoxelsAmt; x++ {
-					for y := yIndex * subVoxelsAmt; y < (yIndex + 1) * subVoxelsAmt; y++ {
-						for z := zIndex * subVoxelsAmt; z < (zIndex + 1) * subVoxelsAmt; z++ {
-							masterVoxels[x][y][z] += 1 / math.Pow(float64(subVoxelsAmt), 3)
+				for x := 0; x < subVoxelsAmt; x++ {
+					for y := 0; y < subVoxelsAmt; y++ {
+						for z := 0; z < subVoxelsAmt; z++ {
+							masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] += 1 / math.Pow(float64(subVoxelsAmt), 3)
 						}
 					}
 				}
