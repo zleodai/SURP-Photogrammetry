@@ -92,7 +92,7 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelEndSize))
 	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelEndSize))
 
-	const minimumVoxelAmount = 8
+	const minVoxelThreshold = 8
 
 	masterVoxels := make([][][]float32, xSize+Iterations)
 	for i := 0; i < len(masterVoxels); i++ {
@@ -105,24 +105,53 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 	for _, point := range points {
 		for i := 0; i < Iterations; i++ {
 			size := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations-1-i))
-			xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / size))
-			yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / size))
-			zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / size))
+			var currXSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / size))
+			var currYSize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / size))
+			var currZSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / size))
 
-			subVoxelsAmt := int(size / voxelEndSize)
-			if size != voxelEndSize {
-				for x := 0; x < subVoxelsAmt; x++ {
-					for y := 0; y < subVoxelsAmt; y++ {
-						for z := 0; z < subVoxelsAmt; z++ {
-							masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] += float32(1 / math.Pow(float64(subVoxelsAmt), 3))
+			if minVoxelThreshold < currXSize && minVoxelThreshold < currYSize && minVoxelThreshold < currZSize {
+				xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / size))
+				yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / size))
+				zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / size))
+
+				subVoxelsAmt := int(size / voxelEndSize)
+				if size != voxelEndSize {
+					for x := 0; x < subVoxelsAmt; x++ {
+						for y := 0; y < subVoxelsAmt; y++ {
+							for z := 0; z < subVoxelsAmt; z++ {
+								masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] += float32(1 / math.Pow(float64(subVoxelsAmt), 3))
+							}
 						}
 					}
+				} else {
+					masterVoxels[xIndex][yIndex][zIndex] += 1
 				}
-			} else {
-				masterVoxels[xIndex][yIndex][zIndex] += 1
 			}
 		}
 	}
+
+	noiseMaskSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations))
+
+	voxelMask := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, noiseMaskSize)
+
+	subVoxelsAmt := int(noiseMaskSize / voxelEndSize)
+
+	for xIndex, xArray := range voxelMask {
+		for yIndex, yArray := range xArray {
+			for zIndex, Value := range yArray {
+				if Value != 0 && Value <= 2 {
+					for x := 0; x < subVoxelsAmt; x++ {
+						for y := 0; y < subVoxelsAmt; y++ {
+							for z := 0; z < subVoxelsAmt; z++ {
+								masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] = 0
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 
 	GenerateVoxelJson(masterVoxels, voxelEndSize)
 }
