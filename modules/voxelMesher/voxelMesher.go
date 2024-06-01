@@ -106,32 +106,30 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 
 	fmt.Printf("\nx bounds: %s, y bounds: %s, z bounds: %s\n", strconv.FormatFloat(math.Abs(xMinMax[0]-xMinMax[1])/minimumVoxelAmount, 'f', -1, 64), strconv.FormatFloat(math.Abs(yMinMax[0]-yMinMax[1])/minimumVoxelAmount, 'f', -1, 64), strconv.FormatFloat(math.Abs(zMinMax[0]-zMinMax[1])/minimumVoxelAmount, 'f', -1, 64))
 
-	voxelSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations-1))
-	for i := 0; i < Iterations; i++ {
+	//voxelSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations-1))
+	for _, point := range points {
+		for i := 0; i < Iterations; i++ {
+			size := math.Pow(float64(scaleFactor), float64(i-1))
+			xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / float64(size)))
+			yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / float64(size)))
+			zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / float64(size)))
 
-		fmt.Printf("\n\nVoxelSize: %f\n", voxelSize)
+			subVoxelsAmt := int(size / voxelEndSize)
 
-		if voxelSize < math.Abs(xMinMax[0]-xMinMax[1])/minimumVoxelAmount && voxelSize < math.Abs(yMinMax[0]-yMinMax[1])/minimumVoxelAmount && voxelSize < math.Abs(zMinMax[0]-zMinMax[1])/minimumVoxelAmount {
-			currVoxels := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, voxelSize)
-
-			currScaleFactor := math.Pow(float64(scaleFactor), float64(Iterations-i-1))
-			numSmallVoxels := math.Pow(currScaleFactor, 3)
-
-			weight := math.Pow(0.5, float64(Iterations-i-1))
-
-			fmt.Printf("Weight: %s, Iteration: %s, NumSmallVoxel: %f\n\n", strconv.FormatFloat(weight, 'f', -1, 64), strconv.Itoa(i), currScaleFactor)
-
-			for x, yArray := range masterVoxels {
-				for y, zArray := range yArray {
-					for z := 0; z < len(zArray); z++ {
-						masterVoxels[x][y][z] += float64(currVoxels[int(x/int(currScaleFactor))][int(y/int(currScaleFactor))][int(z/int(currScaleFactor))]) / numSmallVoxels * weight
+			if size != voxelEndSize {
+				for x := xIndex * subVoxelsAmt; x < (xIndex + 1) * subVoxelsAmt; x++ {
+					for y := yIndex * subVoxelsAmt; y < (yIndex + 1) * subVoxelsAmt; y++ {
+						for z := zIndex * subVoxelsAmt; z < (zIndex + 1) * subVoxelsAmt; z++ {
+							masterVoxels[x][y][z] += 1 / math.Pow(float64(subVoxelsAmt), 3)
+						}
 					}
 				}
+			} else {
+				masterVoxels[xIndex][yIndex][zIndex] += 1
 			}
 		}
-		voxelSize /= float64(scaleFactor)
-		runtime.GC()
 	}
+
 	GenerateVoxelJson(masterVoxels, voxelEndSize)
 }
 
