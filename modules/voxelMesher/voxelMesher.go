@@ -14,7 +14,7 @@ type pointVal struct {
 	X     float64
 	Y     float64
 	Z     float64
-	Value float64
+	Value float32
 }
 
 type pointList struct {
@@ -94,11 +94,11 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 
 	const minimumVoxelAmount = 8
 
-	masterVoxels := make([][][]float64, xSize+Iterations)
+	masterVoxels := make([][][]float32, xSize+Iterations)
 	for i := 0; i < len(masterVoxels); i++ {
-		masterVoxels[i] = make([][]float64, ySize+Iterations)
+		masterVoxels[i] = make([][]float32, ySize+Iterations)
 		for j := 0; j < len(masterVoxels[i]); j++ {
-			masterVoxels[i][j] = make([]float64, zSize+Iterations)
+			masterVoxels[i][j] = make([]float32, zSize+Iterations)
 		}
 	}
 
@@ -114,7 +114,7 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 				for x := 0; x < subVoxelsAmt; x++ {
 					for y := 0; y < subVoxelsAmt; y++ {
 						for z := 0; z < subVoxelsAmt; z++ {
-							masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] += 1 / math.Pow(float64(subVoxelsAmt), 3)
+							masterVoxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] += float32(1 / math.Pow(float64(subVoxelsAmt), 3))
 						}
 					}
 				}
@@ -127,13 +127,13 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 	GenerateVoxelJson(masterVoxels, voxelEndSize)
 }
 
-func GenerateVoxelJson(voxels [][][]float64, voxelSize float64) {
+func GenerateVoxelJson(voxels [][][]float32, voxelSize float64) {
 	file, errs := os.Create("VoxelMatrix.JSON")
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
 	}
 
-	const voxelValueThreshold = 0.25
+	const voxelValueThreshold = 0.01
 
 	enc := json.NewEncoder(file)
 	cleanedPoints := []pointVal{}
