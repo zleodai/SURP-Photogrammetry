@@ -14,11 +14,12 @@ type pointVal struct {
 	X     float64
 	Y     float64
 	Z     float64
-	Value float32
+	Value uint8
 }
 
 type pointList struct {
-	Points []pointVal
+	Points    []pointVal
+	VoxelSize float64
 }
 
 func Test() byte {
@@ -53,24 +54,84 @@ func Mesh(xArray, yArray, zArray []pointCloudDecoder.Point, voxelSize float64) [
 		voxels[xIndex][yIndex][zIndex] += 1
 	}
 
-	//GenerateVoxelJson(voxels)
+	// GenerateVoxelJson(voxels, voxelSize)
 
 	runtime.GC()
 	return voxels
 }
 
-func MinMaxMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelSize float64) [][][]int {
+func filterMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelSize float64, voxels [][][]uint8) {
+	noiseMaskSize := voxelSize * 4
+
+	voxelMask := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, noiseMaskSize, false)
+
+	subVoxelsAmt := int(noiseMaskSize / voxelSize)
+
+	// Filters Mesh by iterating through a bigger voxel cubed Voxel and using the empty space in the bigger voxel to filter out noise.
+	for xIndex, xArray := range voxelMask {
+		for yIndex, yArray := range xArray {
+			for zIndex, Value := range yArray {
+				if Value != 0 && Value <= 2 {
+					for x := 0; x < subVoxelsAmt; x++ {
+						for y := 0; y < subVoxelsAmt; y++ {
+							for z := 0; z < subVoxelsAmt; z++ {
+								voxels[x+(xIndex*subVoxelsAmt)][y+(yIndex*subVoxelsAmt)][z+(zIndex*subVoxelsAmt)] = 0
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+}
+
+func toBinaryArray(xMinMax, yMinMax, zMinMax [2]float64, voxels [][][]uint8, threshold uint8, voxelSize float64) [][][]bool {
+	var xSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / voxelSize))
+	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelSize))
+	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelSize))
+
+	boolMask := make([][][]bool, xSize+4)
+	for i := 0; i < len(boolMask); i++ {
+		boolMask[i] = make([][]bool, ySize+4)
+		for j := 0; j < len(boolMask[i]); j++ {
+			boolMask[i][j] = make([]bool, zSize+4)
+		}
+	}
+
+	// boolMask := make([][][]bool, len(voxels))
+	// for i := 0; i < len(voxels); i++ {
+	// 	voxels[i] = make([][]bool, len(voxels[0]))
+	// 	for j := 0; j < len(voxels[i]); j++ {
+	// 		voxels[i][j] = make([]bool, len(voxels[0][0]))
+	// 	}
+	// }
+
+	for x, xArray := range voxels {
+		for y, yArray := range xArray {
+			for z, value := range yArray {
+				if value > threshold {
+					boolMask[x][y][z] = true
+				}
+			}
+		}
+	}
+
+	return boolMask
+}
+
+func MinMaxMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelSize float64, filterNoise bool) [][][]uint8 {
 	var xSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / voxelSize))
 	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelSize))
 	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelSize))
 	fmt.Println("Voxel Grid X, Y, Z:", xSize, ySize, zSize)
 	fmt.Println("Total Voxel Amount:", xSize*ySize*zSize)
 
-	voxels := make([][][]int, xSize+1)
+	voxels := make([][][]uint8, xSize+4)
 	for i := 0; i < len(voxels); i++ {
-		voxels[i] = make([][]int, ySize+1)
+		voxels[i] = make([][]uint8, ySize+4)
 		for j := 0; j < len(voxels[i]); j++ {
-			voxels[i][j] = make([]int, zSize+1)
+			voxels[i][j] = make([]uint8, zSize+4)
 		}
 	}
 
@@ -78,10 +139,15 @@ func MinMaxMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder
 		xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / voxelSize))
 		yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / voxelSize))
 		zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / voxelSize))
-		voxels[xIndex][yIndex][zIndex] += 1
+		if voxels[xIndex][yIndex][zIndex] != ^uint8(0) {
+			voxels[xIndex][yIndex][zIndex] += 1
+		}
 	}
 
-	//GenerateVoxelJson(voxels)
+	//Add threshold filter
+	if filterNoise {
+		filterMesh(xMinMax, yMinMax, zMinMax, points, voxelSize, voxels)
+	}
 
 	runtime.GC()
 	return voxels
@@ -132,7 +198,7 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 
 	noiseMaskSize := voxelEndSize * math.Pow(float64(scaleFactor), float64(Iterations))
 
-	voxelMask := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, noiseMaskSize)
+	voxelMask := MinMaxMesh(xMinMax, yMinMax, zMinMax, points, noiseMaskSize, false)
 
 	subVoxelsAmt := int(noiseMaskSize / voxelEndSize)
 
@@ -151,12 +217,9 @@ func IterativeMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDeco
 			}
 		}
 	}
-
-
-	GenerateVoxelJson(masterVoxels, voxelEndSize)
 }
 
-func GenerateVoxelJson(voxels [][][]float32, voxelSize float64) {
+func GenerateVoxelJson(voxels [][][]uint8, voxelSize float64) {
 	file, errs := os.Create("VoxelMatrix.JSON")
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
@@ -180,5 +243,5 @@ func GenerateVoxelJson(voxels [][][]float32, voxelSize float64) {
 
 	fmt.Println("Clean Points Got: " + strconv.Itoa(len(cleanedPoints)))
 
-	enc.Encode(pointList{Points: cleanedPoints})
+	enc.Encode(pointList{Points: cleanedPoints, VoxelSize: voxelSize})
 }
