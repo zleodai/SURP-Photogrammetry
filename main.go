@@ -9,13 +9,14 @@ import (
 	"modules/voxelMesher"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 // var jsonFilePath string = "./example_files/footballPCJSON.json"
 // var convertedJsonFileName string = "pointCloud.JSON"
 var convertedJsonFilePath string = "./pointCloud.JSON"
 
-var defaultVoxelSize float64 = 0.005
+var defaultVoxelSize float64 = 0.01
 
 func main() {
 	// commented line for going from meshroom json data to a cleaned up version this program uses
@@ -38,8 +39,17 @@ func main() {
 	// fmt.Printf("\nzMaxValue: %s", strconv.FormatFloat(zArray[len(zArray)-1].Z, 'f', -1, 64))
 	// xArray, yArray, zArray := pointSorter.SortPointData(pointData)
 	// voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
+
 	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
 	voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
+
+	start := time.Now()
+
 	greedyMesher.GreedyMesh(voxels, 2)
+
+	t := time.Now()
+	elapsed := t.Sub(start)
+
+	fmt.Printf("\nElapsed Time: %f\n", elapsed.Seconds())
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 }

@@ -57,6 +57,14 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) {
 		}
 	}
 
+	for z, xyArray := range zxySlices {
+
+		for x, yArray := range xyArray {
+			for y, value := range yArray {
+
+			}
+		}
+	}
 }
 
 func MeshToObj(mesh Mesh) {
