@@ -16,7 +16,7 @@ import (
 // var convertedJsonFileName string = "pointCloud.JSON"
 var convertedJsonFilePath string = "./pointCloud.JSON"
 
-var defaultVoxelSize float64 = 0.01
+var defaultVoxelSize float64 = 0.005
 
 func main() {
 	// commented line for going from meshroom json data to a cleaned up version this program uses

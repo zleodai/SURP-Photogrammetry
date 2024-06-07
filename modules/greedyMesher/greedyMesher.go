@@ -45,26 +45,28 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) {
 		}
 	}
 
-	for x, xArray := range voxels {
-		for y, yArray := range xArray {
-			for z, Value := range yArray {
-				if Value > threshold {
-					zxySlices[z][x][y] = true
-					xyzSlices[x][y][z] = true
-					yxzSlices[y][x][z] = true
+	go func() {
+		for x, xArray := range voxels {
+			for y, yArray := range xArray {
+				for z, Value := range yArray {
+					if Value > threshold {
+						zxySlices[z][x][y] = true
+						xyzSlices[x][y][z] = true
+						yxzSlices[y][x][z] = true
+					}
 				}
 			}
 		}
-	}
+	}()
 
-	for z, xyArray := range zxySlices {
+	// for z, xyArray := range zxySlices {
 
-		for x, yArray := range xyArray {
-			for y, value := range yArray {
+	// 	for x, yArray := range xyArray {
+	// 		for y, value := range yArray {
 
-			}
-		}
-	}
+	// 		}
+	// 	}
+	// }
 }
 
 func MeshToObj(mesh Mesh) {
