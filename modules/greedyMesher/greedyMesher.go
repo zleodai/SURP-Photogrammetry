@@ -15,7 +15,21 @@ type Vertix struct {
 	Z float64
 }
 
-func GreedyMesh(voxels [][][]uint8, threshold uint8) {
+type faceOrientation int
+
+const (
+	up faceOrientation = iota
+	down
+	left
+	right
+)
+
+type Face struct {
+	VoxelCoords [][3]int
+	FaceIndex faceOrientation
+}
+
+func GreedyMesh(voxels [][][]uint8, threshold uint8, voxelSize float64) {
 	zxySlices := make([][][]bool, len(voxels[0][0]))
 	for z := 0; z < len(voxels[0][0]); z++ {
 		zxySlices[z] = make([][]bool, len(voxels))
@@ -53,6 +67,16 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) {
 			}
 		}
 	}()
+}
+
+func combineVoxels(slice [][][]bool) []Face{
+	for dir, dirArray := range slice {
+		for x, xArray := range dirArray {
+			for y, condition := range xArray {
+				
+			}
+		}
+	}
 }
 
 func MeshToObj(mesh Mesh) {
