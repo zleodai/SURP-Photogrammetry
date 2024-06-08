@@ -21,18 +21,18 @@ type faceOrientation int
 const (
 	up faceOrientation = iota
 	down
-	left
 	right
+	left
 	forward
 	backward
 )
 
 type Face struct {
-	VoxelCoords [3]int
+	VoxelCoords [][3]int
 	FaceIndex   faceOrientation
 }
 
-func GreedyMesh(voxels [][][]uint8, threshold uint8) {
+func GreedyMesh(voxels [][][]uint8, threshold uint8) []Face {
 	zxySlices := make([][][]bool, len(voxels[0][0]))
 	for z := 0; z < len(voxels[0][0]); z++ {
 		zxySlices[z] = make([][]bool, len(voxels))
@@ -72,88 +72,134 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) {
 	}()
 
 	outputFaces := []Face{}
-	for z, zArray := range zxySlices {
-		for x, xArray := range zArray {
-			for y, voxelPresent := range xArray {
-				if voxelPresent && z != len(zArray)-1 && z != 0 {
-					if zxySlices[z+1][x][y] {
-						//Relative Upface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 0}
-						outputFaces = append(outputFaces, newFace)
-					}
-					if zxySlices[z-1][x][y] {
-						//Relative Downface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 1}
-						outputFaces = append(outputFaces, newFace)
-					}
-				}
-			}
-		}
-	}
-	for x, xArray := range xyzSlices {
-		for y, yArray := range xArray {
-			for z, voxelPresent := range yArray {
-				if voxelPresent && x != len(xArray)-1 && x != 0 {
-					if xyzSlices[x+1][y][z] {
-						//Relative Upface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 3}
-						outputFaces = append(outputFaces, newFace)
-					}
-					if xyzSlices[x-1][y][z] {
-						//Relative Downface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 2}
-						outputFaces = append(outputFaces, newFace)
-					}
-				}
-			}
-		}
-	}
-	for y, yArray := range yxzSlices {
-		for x, xArray := range yArray {
-			for z, voxelPresent := range xArray {
-				if voxelPresent && y != len(yArray)-1 && y != 0 {
-					if yxzSlices[y+1][x][z] {
-						//Relative Upface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 4}
-						outputFaces = append(outputFaces, newFace)
-					}
-					if yxzSlices[y-1][x][z] {
-						//Relative Downface found
-						voxelCoords := [3]int{x, y, z}
-						var newFace Face = Face{VoxelCoords: voxelCoords, FaceIndex: 5}
-						outputFaces = append(outputFaces, newFace)
-					}
-				}
-			}
-		}
-	}
-	fmt.Print(outputFaces)
+	go func() {
+		outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, 1)...)
+		outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, -1)...)
+		outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, 1)...)
+		outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, -1)...)
+		outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, 1)...)
+		outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, -1)...)
+	}()
+	return outputFaces
 }
 
-// func combineVoxels(slice [][][]bool, mode int) []Face {
-// 	outputFaces := []Face{}
-// 	for dir, dirArray := range slice {
-// 		for x, xArray := range dirArray {
-// 			for y, voxelPresent := range xArray {
-// 				if voxelPresent {
-// 					if slice[dir+1][x][y] || dir == len(dirArray)-1{
-// 						//Relative Upface found
-// 						var newFace Face = Face{VoxelCoords: {}}
-// 						outputFaces = append(outputFaces, )
-// 					if slice[dir-1][x][y] || dir == 0 {
-// 						//Relative Downface found
-// 						outputFaces = append(outputFaces, )
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection int) []Face {
+	//orientationDirection is essentially a int saying whether its an up pass or down pass,
+	//orientationDirection = 1 means up pass
+	//orientationDirection = -1 means down pass
+
+	//make a copy of refSlice
+	slice := make([][][]bool, len(refSlice))
+	for x := 0; x < len(refSlice); x++ {
+		slice[x] = make([][]bool, len(refSlice[0]))
+		for y := 0; y < len(refSlice[0]); y++ {
+			slice[x][y] = make([]bool, len(refSlice[0][0]))
+		}
+	}
+
+	copy(slice, refSlice)
+
+	outputFaces := []Face{}
+	for dir, dirArray := range slice {
+		for x, xArray := range dirArray {
+			for y, voxelPresent := range xArray {
+				if voxelPresent {
+					// fmt.Printf("\nVoxel Present at %d, %d, %d for %d at %d direction\n", dir, x, y, orientationOffset, orientationDirection)
+					var edgeOfArray bool = false
+					if (dir == 0 && orientationDirection == -1) || (dir == len(dirArray)-1 && orientationDirection == 1) {
+						edgeOfArray = true
+					}
+					var faceFound, maxXReached bool = false, false
+					//Creates a new array to record the corners of the face being generated. Initalizes it with the voxel (dir, x, y)
+					var faceBounds [][3]int = [][3]int{voxelCordsOffsetter([3]int{dir, x, y}, orientationOffset)}
+
+					//Initalizes bounds for the x and y expansion of the face.
+					cornerBounds := [2]int{x, y}
+					for !faceFound {
+						if !maxXReached {
+							if slice[dir][cornerBounds[0]+1][y] && (edgeOfArray || slice[dir+orientationDirection][cornerBounds[0]+1][y]) {
+								cornerBounds[0] += 1
+								if len(faceBounds) == 1 {
+									faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], y})
+								} else {
+									faceBounds[1][1] = cornerBounds[0]
+								}
+							} else {
+								maxXReached = true
+							}
+						} else {
+							var yIncreasePossible bool = true
+							for i := 0; i < cornerBounds[0]-faceBounds[0][1]+1; i++ {
+								if !(slice[dir][faceBounds[0][1]+i][cornerBounds[1]+1] && (edgeOfArray || slice[dir+orientationDirection][faceBounds[0][1]+i][cornerBounds[1]+1])) {
+									yIncreasePossible = false
+								}
+							}
+							// fmt.Printf("\n        yIncreasePossible: %t,  edgeOfArray: %t\n", yIncreasePossible, edgeOfArray)
+							if yIncreasePossible {
+								cornerBounds[1] += 1
+								if len(faceBounds) == 1 {
+									faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
+								} else if faceBounds[0][1] == faceBounds[1][1] {
+									faceBounds[1][2] = cornerBounds[1]
+								} else if len(faceBounds) == 2 {
+									faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], cornerBounds[1]})
+									faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
+								} else {
+									faceBounds[2][2] = cornerBounds[1]
+									faceBounds[3][2] = cornerBounds[1]
+								}
+							} else {
+								faceFound = true
+							}
+						}
+						// fmt.Printf("\n    faceFound: %t, maxXReached: %t,  cornerBounds: [%d, %d]\n", faceFound, maxXReached, cornerBounds[0], cornerBounds[1])
+						// for _, face := range faceBounds {
+						// 	fmt.Printf("\n    [%d, %d, %d]\n", face[0], face[1], face[2])
+						// }
+					}
+					var newFace Face
+					if orientationDirection == 1 {
+						newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset)}
+					} else {
+						newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset + 1)}
+					}
+					outputFaces = append(outputFaces, newFace)
+
+					//Lastly now u have to set the voxelPresent bool to false for the voxels already considered into outputFaces
+					for curX := faceBounds[0][1]; curX < cornerBounds[0]; curX++ {
+						for curY := faceBounds[0][2]; curY < cornerBounds[1]; curY++ {
+							slice[dir][curX][curY] = false
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// fmt.Printf("\nCombined Voxels for %d in %d direction\n", orientationOffset, orientationDirection)
+	return outputFaces
+}
+
+func voxelCordsOffsetter(coords [3]int, orientationOffset int) [3]int {
+	//Used to change cords from zxy into the normalized xyz. Assumes that you are putting the right orientationOffset
+	//Assumes the following:
+	//orientationOffset = 0, when zxy
+	//orientationOffset = 2, when xyz
+	//orientationOffset = 4, when yxz
+	var voxelCoords [3]int
+	switch x := orientationOffset; x {
+	case 0:
+		voxelCoords = [3]int{coords[1], coords[2], coords[0]}
+	case 2:
+		voxelCoords = [3]int{coords[0], coords[1], coords[2]}
+	case 4:
+		voxelCoords = [3]int{coords[1], coords[0], coords[2]}
+	default:
+		fmt.Println("Error, orientationOffset param in combineVoxels() must be either 0, 2, or 4 to signify zxy, xyz, and yxz respectively")
+		voxelCoords = [3]int{coords[0], coords[1], coords[2]}
+	}
+	return voxelCoords
+}
 
 func MeshToObj(mesh Mesh) {
 	file, errs := os.Create("VoxelMatrix.JSON")
