@@ -72,14 +72,12 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) []Face {
 	}()
 
 	outputFaces := []Face{}
-	go func() {
-		outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, 1)...)
-		outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, -1)...)
-		outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, 1)...)
-		outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, -1)...)
-		outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, 1)...)
-		outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, -1)...)
-	}()
+	outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, 1)...)
+	outputFaces = append(outputFaces, combineVoxels(zxySlices, 0, -1)...)
+	outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, 1)...)
+	outputFaces = append(outputFaces, combineVoxels(xyzSlices, 2, -1)...)
+	outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, 1)...)
+	outputFaces = append(outputFaces, combineVoxels(yxzSlices, 4, -1)...)
 	return outputFaces
 }
 
