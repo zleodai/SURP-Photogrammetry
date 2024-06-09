@@ -95,18 +95,16 @@ func GenerateVoxelJson(voxels [][][]uint8, voxelSize float64) {
 
 	enc := json.NewEncoder(file)
 	cleanedPoints := []pointVal{}
-	go func() {
-		for xIndex, xArray := range voxels {
-			for yIndex, yArray := range xArray {
-				for zIndex, Value := range yArray {
-					if Value > voxelValueThreshold {
-						point := pointVal{X: float64(xIndex) * voxelSize, Y: float64(yIndex) * voxelSize, Z: float64(zIndex) * voxelSize, Value: Value}
-						cleanedPoints = append(cleanedPoints, point)
-					}
+	for xIndex, xArray := range voxels {
+		for yIndex, yArray := range xArray {
+			for zIndex, Value := range yArray {
+				if Value > voxelValueThreshold {
+					point := pointVal{X: float64(xIndex) * voxelSize, Y: float64(yIndex) * voxelSize, Z: float64(zIndex) * voxelSize, Value: Value}
+					cleanedPoints = append(cleanedPoints, point)
 				}
 			}
 		}
-	}()
+	}
 
 	fmt.Println("Clean Points Got: " + strconv.Itoa(len(cleanedPoints)))
 

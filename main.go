@@ -9,7 +9,6 @@ import (
 	"modules/voxelMesher"
 	"runtime"
 	"strconv"
-	"time"
 )
 
 // var jsonFilePath string = "./example_files/footballPCJSON.json"
@@ -40,16 +39,10 @@ func main() {
 
 	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
 	voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
-
-	//voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
-	startTime := time.Now()
+	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
 	greedyMesher.GenerateFaceJson(faces)
-
-	duration := time.Since(startTime)
-
-	fmt.Printf("\nTime for GreedyMesher: %s", duration)
 
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 }

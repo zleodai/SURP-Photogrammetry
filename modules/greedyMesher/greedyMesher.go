@@ -28,13 +28,24 @@ const (
 	backward
 )
 
-type Faces struct {
-	FaceArray []Face
-}
-
 type Face struct {
 	VoxelCoords [][3]int
 	FaceIndex   faceOrientation
+}
+
+type Faces struct {
+	FaceArray []JSONFace
+}
+
+type JSONFace struct {
+	VoxelCoords []Point
+	FaceIndex   int
+}
+
+type Point struct {
+	X int
+	Y int
+	Z int
 }
 
 func GreedyMesh(voxels [][][]uint8, threshold uint8) []Face {
@@ -103,13 +114,14 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 	copy(slice, refSlice)
 
 	outputFaces := []Face{}
-	for dir, dirArray := range slice {
-		for x, xArray := range dirArray {
-			for y, voxelPresent := range xArray {
+	for dir := 0; dir < len(slice); dir++ {
+		for x := 0; x < len(slice[0]); x++ {
+			for y := 0; y < len(slice[0][0]); y++ {
+				var voxelPresent bool = slice[dir][x][y]
 				if voxelPresent {
 					// fmt.Printf("\nVoxel Present at %d, %d, %d for %d at %d direction\n", dir, x, y, orientationOffset, orientationDirection)
 					var edgeOfArray bool = false
-					if (dir == 0 && orientationDirection == -1) || (dir == len(dirArray)-1 && orientationDirection == 1) {
+					if (dir == 0 && orientationDirection == -1) || (dir == len(slice)-1 && orientationDirection == 1) {
 						edgeOfArray = true
 					}
 					var faceFound, maxXReached bool = false, false
@@ -217,6 +229,17 @@ func GenerateFaceJson(faces []Face) {
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
 	}
+
+	var jsonFaces []JSONFace = []JSONFace{}
+
+	for _, face := range faces {
+		var points []Point = []Point{}
+		for _, point := range face.VoxelCoords {
+			points = append(points, Point{X: point[0], Y: point[1], Z: point[2]})
+		}
+		jsonFaces = append(jsonFaces, JSONFace{VoxelCoords: points, FaceIndex: int(face.FaceIndex)})
+	}
+
 	enc := json.NewEncoder(file)
-	enc.Encode(Faces{FaceArray: faces})
+	enc.Encode(Faces{FaceArray: jsonFaces})
 }
