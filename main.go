@@ -43,7 +43,10 @@ func main() {
 
 	//voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 	startTime := time.Now()
-	greedyMesher.GreedyMesh(voxels, 2)
+
+	faces := greedyMesher.GreedyMesh(voxels, 2)
+	greedyMesher.GenerateFaceJson(faces)
+
 	duration := time.Since(startTime)
 
 	fmt.Printf("\nTime for GreedyMesher: %s", duration)
