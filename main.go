@@ -39,10 +39,12 @@ func main() {
 
 	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
 	voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
+	runtime.GC()
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
 	greedyMesher.GenerateFaceJson(faces)
+	runtime.GC()
 
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 }
