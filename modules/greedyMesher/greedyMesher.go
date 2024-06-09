@@ -98,81 +98,83 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 	copy(slice, refSlice)
 
 	outputFaces := []Face{}
-	for dir, dirArray := range slice {
-		for x, xArray := range dirArray {
-			for y, voxelPresent := range xArray {
-				if voxelPresent {
-					// fmt.Printf("\nVoxel Present at %d, %d, %d for %d at %d direction\n", dir, x, y, orientationOffset, orientationDirection)
-					var edgeOfArray bool = false
-					if (dir == 0 && orientationDirection == -1) || (dir == len(dirArray)-1 && orientationDirection == 1) {
-						edgeOfArray = true
-					}
-					var faceFound, maxXReached bool = false, false
-					//Creates a new array to record the corners of the face being generated. Initalizes it with the voxel (dir, x, y)
-					var faceBounds [][3]int = [][3]int{voxelCordsOffsetter([3]int{dir, x, y}, orientationOffset)}
-
-					//Initalizes bounds for the x and y expansion of the face.
-					cornerBounds := [2]int{x, y}
-					for !faceFound {
-						if !maxXReached {
-							if slice[dir][cornerBounds[0]+1][y] && (edgeOfArray || slice[dir+orientationDirection][cornerBounds[0]+1][y]) {
-								cornerBounds[0] += 1
-								if len(faceBounds) == 1 {
-									faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], y})
-								} else {
-									faceBounds[1][1] = cornerBounds[0]
-								}
-							} else {
-								maxXReached = true
-							}
-						} else {
-							var yIncreasePossible bool = true
-							for i := 0; i < cornerBounds[0]-faceBounds[0][1]+1; i++ {
-								if !(slice[dir][faceBounds[0][1]+i][cornerBounds[1]+1] && (edgeOfArray || slice[dir+orientationDirection][faceBounds[0][1]+i][cornerBounds[1]+1])) {
-									yIncreasePossible = false
-								}
-							}
-							// fmt.Printf("\n        yIncreasePossible: %t,  edgeOfArray: %t\n", yIncreasePossible, edgeOfArray)
-							if yIncreasePossible {
-								cornerBounds[1] += 1
-								if len(faceBounds) == 1 {
-									faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
-								} else if faceBounds[0][1] == faceBounds[1][1] {
-									faceBounds[1][2] = cornerBounds[1]
-								} else if len(faceBounds) == 2 {
-									faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], cornerBounds[1]})
-									faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
-								} else {
-									faceBounds[2][2] = cornerBounds[1]
-									faceBounds[3][2] = cornerBounds[1]
-								}
-							} else {
-								faceFound = true
-							}
+	go func() {
+		for dir, dirArray := range slice {
+			for x, xArray := range dirArray {
+				for y, voxelPresent := range xArray {
+					if voxelPresent {
+						// fmt.Printf("\nVoxel Present at %d, %d, %d for %d at %d direction\n", dir, x, y, orientationOffset, orientationDirection)
+						var edgeOfArray bool = false
+						if (dir == 0 && orientationDirection == -1) || (dir == len(dirArray)-1 && orientationDirection == 1) {
+							edgeOfArray = true
 						}
-						// fmt.Printf("\n    faceFound: %t, maxXReached: %t,  cornerBounds: [%d, %d]\n", faceFound, maxXReached, cornerBounds[0], cornerBounds[1])
-						// for _, face := range faceBounds {
-						// 	fmt.Printf("\n    [%d, %d, %d]\n", face[0], face[1], face[2])
-						// }
-					}
-					var newFace Face
-					if orientationDirection == 1 {
-						newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset)}
-					} else {
-						newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset + 1)}
-					}
-					outputFaces = append(outputFaces, newFace)
+						var faceFound, maxXReached bool = false, false
+						//Creates a new array to record the corners of the face being generated. Initalizes it with the voxel (dir, x, y)
+						var faceBounds [][3]int = [][3]int{voxelCordsOffsetter([3]int{dir, x, y}, orientationOffset)}
 
-					//Lastly now u have to set the voxelPresent bool to false for the voxels already considered into outputFaces
-					for curX := faceBounds[0][1]; curX < cornerBounds[0]; curX++ {
-						for curY := faceBounds[0][2]; curY < cornerBounds[1]; curY++ {
-							slice[dir][curX][curY] = false
+						//Initalizes bounds for the x and y expansion of the face.
+						cornerBounds := [2]int{x, y}
+						for !faceFound {
+							if !maxXReached {
+								if slice[dir][cornerBounds[0]+1][y] && (edgeOfArray || slice[dir+orientationDirection][cornerBounds[0]+1][y]) {
+									cornerBounds[0] += 1
+									if len(faceBounds) == 1 {
+										faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], y})
+									} else {
+										faceBounds[1][1] = cornerBounds[0]
+									}
+								} else {
+									maxXReached = true
+								}
+							} else {
+								var yIncreasePossible bool = true
+								for i := 0; i < cornerBounds[0]-faceBounds[0][1]+1; i++ {
+									if !(slice[dir][faceBounds[0][1]+i][cornerBounds[1]+1] && (edgeOfArray || slice[dir+orientationDirection][faceBounds[0][1]+i][cornerBounds[1]+1])) {
+										yIncreasePossible = false
+									}
+								}
+								// fmt.Printf("\n        yIncreasePossible: %t,  edgeOfArray: %t\n", yIncreasePossible, edgeOfArray)
+								if yIncreasePossible {
+									cornerBounds[1] += 1
+									if len(faceBounds) == 1 {
+										faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
+									} else if faceBounds[0][1] == faceBounds[1][1] {
+										faceBounds[1][2] = cornerBounds[1]
+									} else if len(faceBounds) == 2 {
+										faceBounds = append(faceBounds, [3]int{dir, cornerBounds[0], cornerBounds[1]})
+										faceBounds = append(faceBounds, [3]int{dir, faceBounds[0][1], cornerBounds[1]})
+									} else {
+										faceBounds[2][2] = cornerBounds[1]
+										faceBounds[3][2] = cornerBounds[1]
+									}
+								} else {
+									faceFound = true
+								}
+							}
+							// fmt.Printf("\n    faceFound: %t, maxXReached: %t,  cornerBounds: [%d, %d]\n", faceFound, maxXReached, cornerBounds[0], cornerBounds[1])
+							// for _, face := range faceBounds {
+							// 	fmt.Printf("\n    [%d, %d, %d]\n", face[0], face[1], face[2])
+							// }
+						}
+						var newFace Face
+						if orientationDirection == 1 {
+							newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset)}
+						} else {
+							newFace = Face{VoxelCoords: faceBounds, FaceIndex: faceOrientation(orientationOffset + 1)}
+						}
+						outputFaces = append(outputFaces, newFace)
+
+						//Lastly now u have to set the voxelPresent bool to false for the voxels already considered into outputFaces
+						for curX := faceBounds[0][1]; curX < cornerBounds[0]; curX++ {
+							for curY := faceBounds[0][2]; curY < cornerBounds[1]; curY++ {
+								slice[dir][curX][curY] = false
+							}
 						}
 					}
 				}
 			}
 		}
-	}
+	}()
 
 	// fmt.Printf("\nCombined Voxels for %d in %d direction\n", orientationOffset, orientationDirection)
 	return outputFaces
