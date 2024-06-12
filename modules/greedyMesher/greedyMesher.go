@@ -126,7 +126,9 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 			currentSlice[x] = make([]bool, len(voxels[0][0]))
 		}
 
-		copy(currentSlice, voxels[z])
+		b, _ := json.Marshal(voxels[z])
+
+		json.Unmarshal(b, &currentSlice)
 
 		assumeAir := false
 		if (!isUp && z == 0) || (isUp && z == len(voxels) -1){

@@ -1,1 +1,1 @@
-{"FaceArray":[{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":1},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":2},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":4}]}
+{"FaceArray":[{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":0},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":1},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":2},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":3},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":4},{"VoxelCoords":[{"X":5,"Y":5,"Z":5}],"FaceIndex":5}]}
