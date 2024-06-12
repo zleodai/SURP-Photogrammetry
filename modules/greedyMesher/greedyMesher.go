@@ -89,23 +89,11 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) []Face {
 
 	outputFaces := []Face{}
 	outputFaces = append(outputFaces, combineVoxels2(zxySlices, 0, true)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 	outputFaces = append(outputFaces, combineVoxels2(zxySlices, 0, false)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 	outputFaces = append(outputFaces, combineVoxels2(xyzSlices, 2, true)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 	outputFaces = append(outputFaces, combineVoxels2(xyzSlices, 2, false)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 	outputFaces = append(outputFaces, combineVoxels2(yxzSlices, 4, true)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 	outputFaces = append(outputFaces, combineVoxels2(yxzSlices, 4, false)...)
-	fmt.Print(outputFaces)
-	fmt.Println()
 
 	return outputFaces
 }
@@ -124,11 +112,10 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 		currentSlice := make([][]bool, len(voxels[0]))
 		for x := 0; x < len(voxels[0]); x++ {
 			currentSlice[x] = make([]bool, len(voxels[0][0]))
+			for y := 0; y < len(voxels[0][0]); y++ {
+				currentSlice[x][y] = voxels[z][x][y]
+			}
 		}
-
-		b, _ := json.Marshal(voxels[z])
-
-		json.Unmarshal(b, &currentSlice)
 
 		assumeAir := false
 		if (!isUp && z == 0) || (isUp && z == len(voxels) -1){

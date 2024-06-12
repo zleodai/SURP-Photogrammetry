@@ -6,6 +6,7 @@ import (
 	"modules/objExporter"
 	"modules/pointCloudDecoder"
 	"modules/pointSorter"
+	"modules/voxelMesher"
 	"runtime"
 	"strconv"
 )
@@ -36,27 +37,27 @@ func main() {
 	// xArray, yArray, zArray := pointSorter.SortPointData(pointData)
 	// voxelMesher.Mesh(xArray, yArray, zArray, defaultVoxelSize)
 
-	// xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
-	// voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
-	// runtime.GC()
-	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
+	xMinMax, yMinMax, zMinMax := pointSorter.MinMaxPoints(pointData)
+	voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
+	runtime.GC()
+	voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 
-	xSize := 10
-	ySize := 10
-	zSize := 10
+	// xSize := 10
+	// ySize := 10
+	// zSize := 10
 
-	voxels := make([][][]uint8, xSize)
-	for i := 0; i < len(voxels); i++ {
-		voxels[i] = make([][]uint8, ySize)
-		for j := 0; j < len(voxels[i]); j++ {
-			voxels[i][j] = make([]uint8, zSize)
-		}
-	}
+	// voxels := make([][][]uint8, xSize)
+	// for i := 0; i < len(voxels); i++ {
+	// 	voxels[i] = make([][]uint8, ySize)
+	// 	for j := 0; j < len(voxels[i]); j++ {
+	// 		voxels[i][j] = make([]uint8, zSize)
+	// 	}
+	// }
 
-	voxels[5][5][5] = 10
+	// voxels[5][5][5] = 10
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
-
+	
 	greedyMesher.GenerateFaceJson(faces)
 	runtime.GC()
 
