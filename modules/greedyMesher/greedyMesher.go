@@ -73,32 +73,154 @@ func GreedyMesh(voxels [][][]uint8, threshold uint8) []Face {
 		}
 	}
 
-	go func() {
-		for x, xArray := range voxels {
-			for y, yArray := range xArray {
-				for z, Value := range yArray {
-					if Value > threshold {
-						zxySlices[z][x][y] = true
-						xyzSlices[x][y][z] = true
-						yxzSlices[y][x][z] = true
-					}
+	for x, xArray := range voxels {
+		for y, yArray := range xArray {
+			for z, Value := range yArray {
+				if Value > threshold {
+					zxySlices[z][x][y] = true
+					xyzSlices[x][y][z] = true
+					yxzSlices[y][x][z] = true
 				}
 			}
 		}
-	}()
+	}
 
 	outputFaces := []Face{}
-	outputFaces = append(outputFaces, combineVoxels2(zxySlices, 0, true)...)
-	outputFaces = append(outputFaces, combineVoxels2(zxySlices, 0, false)...)
-	outputFaces = append(outputFaces, combineVoxels2(xyzSlices, 2, true)...)
-	outputFaces = append(outputFaces, combineVoxels2(xyzSlices, 2, false)...)
-	outputFaces = append(outputFaces, combineVoxels2(yxzSlices, 4, true)...)
-	outputFaces = append(outputFaces, combineVoxels2(yxzSlices, 4, false)...)
+
+	outputFaces = append(outputFaces, combineVoxels3(zxySlices, 0, true)...)
+	outputFaces = append(outputFaces, combineVoxels3(zxySlices, 0, false)...)
+	outputFaces = append(outputFaces, combineVoxels3(xyzSlices, 2, true)...)
+	outputFaces = append(outputFaces, combineVoxels3(xyzSlices, 2, false)...)
+	outputFaces = append(outputFaces, combineVoxels3(yxzSlices, 4, true)...)
+	outputFaces = append(outputFaces, combineVoxels3(yxzSlices, 4, false)...)
 
 	return outputFaces
 }
 
+func combineVoxels3(voxels [][][]bool, orientation int, isUp bool) []Face {
+	var combinedVoxels []Face = []Face{}
+	var dirOffset int
+	if isUp {
+		dirOffset = 1
+	} else {
+		dirOffset = -1
+	}
+	
+	for dir, dirArray := range voxels {
+		currentSlice := make([][]bool, len(voxels[0]))
+		for x := 0; x < len(voxels[0]); x++ {
+			currentSlice[x] = make([]bool, len(voxels[0][0]))
+			for y := 0; y < len(voxels[0][0]); y++ {
+				currentSlice[x][y] = voxels[dir][x][y]
+			}
+		}
+
+		var assumeAir bool = false
+		if (!isUp && dir == 0) || (isUp && dir == len(voxels) -1) {
+			assumeAir = true
+		} 
+
+		for x, xArray := range dirArray {
+			for y, _ := range xArray {
+				if currentSlice[x][y] && (assumeAir || !voxels[dir+dirOffset][x][y]) {
+					var xIncreasePossible bool = false
+					var yIncreasePossible bool = false
+
+					var corners [][3]int = [][3]int{{dir, x, y}}
+					
+					if (x + 1 < len(currentSlice) && currentSlice[x+1][y]) && (assumeAir ||!voxels[dir+dirOffset][x+1][y]) {
+						xIncreasePossible = true
+					} else if (y + 1 < len(currentSlice[0]) && currentSlice[x][y+1]) && (assumeAir || !voxels[dir+dirOffset][x][y+1]) {
+						yIncreasePossible = true
+					}
+
+					// fmt.Printf("\nxIncreasePossible: %t, yIncreasePossible: %t\n", xIncreasePossible, yIncreasePossible)
+					if xIncreasePossible {
+						corners = append(corners, [3]int{dir, x+1, y})
+						for xIncreasePossible {
+							var currX int = corners[1][1]
+							if (currX + 1 < len(currentSlice) && currentSlice[currX+1][y]) && (assumeAir || !voxels[dir+dirOffset][currX+1][y]) {
+								// fmt.Println("X Increase Possible")
+								// fmt.Printf("	Size Constraint: %t, Voxel Present: %t, Assume Air: %t, Empty Voxel Above: %t\n", currX + 1 < len(currentSlice), currentSlice[currX+1][y], assumeAir, !voxels[dir+dirOffset][currX+1][y])
+								corners[1][1] += 1
+							} else {
+								xIncreasePossible = false                 
+								yIncreasePossible = true
+							}
+						}
+						for yIncreasePossible {
+							var currY = corners[1][2]
+							for currX := corners[0][1]; currX <= corners[1][1]; currX++ {
+								if !((currY + 1 < len(currentSlice[0]) && currentSlice[currX][currY+1]) && (assumeAir || !voxels[dir+dirOffset][currX][currY+1])) {
+									yIncreasePossible = false
+								}
+							}
+							if (yIncreasePossible) {
+								corners[1][2] += 1
+							}
+						}
+					}
+					if yIncreasePossible {
+						corners = append(corners, [3]int{dir, x, y+1})
+						for yIncreasePossible {
+							var currY int = corners[1][2]
+							if (currY + 1 < len(currentSlice[0]) && currentSlice[x][currY+1]) && (assumeAir || !voxels[dir+dirOffset][x][currY+1]) {
+								// fmt.Println("Y Increase Possible")
+								// fmt.Printf("	Size Constraint: %t, Voxel Present: %t, Assume Air: %t, Empty Voxel Above: %t\n", currY + 1 < len(currentSlice[0]), currentSlice[x][currY+1], assumeAir, !voxels[dir+dirOffset][x][currY+1])
+								corners[1][2] += 1
+							} else {
+								yIncreasePossible = false
+								xIncreasePossible = true
+							}
+						}
+						for xIncreasePossible {
+							var currX = corners[1][1]
+							for currY := corners[0][2]; currY <= corners[1][2]; currY++ {
+								if !((currX + 1 < len(currentSlice) && currentSlice[currX+1][currY]) && (assumeAir || !voxels[dir+dirOffset][currX+1][currY])) {
+									xIncreasePossible = false
+								}
+							}
+							if (xIncreasePossible) {
+								corners[1][1] += 1
+							}
+						}
+					}
+					
+					switch length := len(corners); length {
+					case 1:
+						currentSlice[corners[0][1]][corners[0][2]] = false
+					case 2:
+						for currX := corners[0][1]; currX <= corners[1][1]; currX++ {
+							for currY := corners[0][2]; currY <= corners[1][2]; currY++ {
+								currentSlice[currX][currY] = false
+							}
+						}
+					default:
+						fmt.Println("Error on switch case. len(corners) must be either 1 or 2")
+					}
+
+					normalizedCorners := [][3]int{}
+					for _, corner := range corners {
+						newX, newY, newZ := remapXYZ(corner[0], corner[1], corner[2], FaceOrientation(orientation))
+						normalizedCorners = append(normalizedCorners, [3]int{newX, newY, newZ})
+					}
+
+					var newFace Face
+					if isUp {
+						newFace = Face{VoxelCoords: normalizedCorners, FaceIndex: FaceOrientation(orientation)}
+					} else {
+						newFace = Face{VoxelCoords: normalizedCorners, FaceIndex: FaceOrientation(orientation + 1)}
+					}
+					combinedVoxels = append(combinedVoxels, newFace)
+				}
+			}
+		}
+	}
+	return combinedVoxels
+}
+
 func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) []Face {
+	// fmt.Printf("\nCombining Voxels, Orientation: %d, isUp: %t\n", orientation, isUp)
 	greedyMeshed := []Face{}
 
 	checkOffset := 0
@@ -125,6 +247,8 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 			for y := 0; y < len(currentSlice[0]); y++ {
 				currVoxel := currentSlice[x][y]
 				if currVoxel && (assumeAir || !voxels[z + checkOffset][x][y]){
+					// fmt.Printf("\n	CurrentVoxel: [%d, %d, %d]\n", z, x, y)
+					// fmt.Printf("\n	IsFace: !voxels[%d + %d][%d][%d]", z, checkOffset, x, y)
 					x1, y1, z1 := remapXYZ(x,y,z, orientation)
 					corners := [][3]int{{x1, y1, z1}}
 					
@@ -196,9 +320,9 @@ func remapXYZ(x,y,z int, orientation FaceOrientation) (int, int, int){
 	case left:
 		return z, x, y
 	case forward:
-		return x, z, y
+		return z, y, x
 	case backward:
-		return x, z, y
+		return z, y, x
 	default:
 		return x, y, z
 	}
@@ -223,8 +347,6 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 	outputFaces := []Face{}
 
 	// fmt.Printf("\nLengths: %d, %d, %d\n", len(refSlice), len(refSlice[0]), len(refSlice[0][0]))
-	
-	var edgeOfArrayCount int = 0
 
 	for dir := 0; dir < len(refSlice); dir++ {
 		currentSlice := make([][]bool, len(refSlice[0]))
@@ -241,7 +363,6 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 					// fmt.Printf("\nVoxel Present at %d, %d, %d for %d at %d direction\n", dir, x, y, orientationOffset, orientationDirection)
 					var edgeOfArray bool = false
 					if (dir == 0 && orientationDirection == -1) || (dir == len(refSlice)-1 && orientationDirection == 1) {
-						edgeOfArrayCount += 1
 						edgeOfArray = true
 					}
 					var faceFound, maxXReached bool = false, false
@@ -341,8 +462,6 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 		var normalizedFace Face = Face{VoxelCoords: normalizedCoords, FaceIndex: face.FaceIndex}
 		normalizedFaces[faceIndex] = normalizedFace
 	}
-
-	fmt.Printf("\nEdgeOfArrayCount: %d\n", edgeOfArrayCount)
 
 	// fmt.Printf("\nCombined Voxels for %d in %d direction\n", orientationOffset, orientationDirection)
 	return normalizedFaces
