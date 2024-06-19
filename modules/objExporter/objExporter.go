@@ -15,10 +15,16 @@ func Test() byte {
 	return 0
 }
 
+type PointData struct {
+	Points []Point
+	VoxelSize float32
+}
+
 type Point struct {
 	X float32
 	Y float32
 	Z float32
+	Value float32
 }
 
 func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
@@ -183,7 +189,7 @@ func getVertexFromString(vertex string) [3]float32 {
 func PointsToJson(points [][3]float32) {
 	toJSON := []Point{}
 	for _, point := range points {
-		toJSON = append(toJSON, Point{X: point[0], Y: point[1], Z: point[2]})
+		toJSON = append(toJSON, Point{X: point[0], Y: point[1], Z: point[2], Value: 1})
 	}
 
 	file, errs := os.Create("NewPointCloud.JSON")
@@ -192,5 +198,5 @@ func PointsToJson(points [][3]float32) {
 	}
 
 	enc := json.NewEncoder(file)
-	enc.Encode(toJSON)
+	enc.Encode(PointData{Points: toJSON, VoxelSize: 1})
 }

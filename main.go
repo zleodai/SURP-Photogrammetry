@@ -68,7 +68,7 @@ func main() {
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
 	vertices := objExporter.GetVerticesFromFaces(faces)
-	fmt.Print(vertices)
+	objExporter.PointsToJson(vertices)
 	runtime.GC()
 
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
