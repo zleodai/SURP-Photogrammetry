@@ -7,6 +7,7 @@ import (
 	"modules/pointCloudDecoder"
 	"os"
 	"runtime"
+	"slices"
 	"strconv"
 )
 
@@ -20,6 +21,65 @@ type pointVal struct {
 type pointList struct {
 	Points    []pointVal
 	VoxelSize float64
+}
+
+func PointcloudPreprocessFilter(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelAmnt int, precentCheck float64) []pointCloudDecoder.Point {
+	sizes := []float64{}
+	sizes = append(sizes, (math.Abs(xMinMax[0]-xMinMax[1])/float64(voxelAmnt)))
+	sizes = append(sizes, (math.Abs(yMinMax[0]-yMinMax[1])/float64(voxelAmnt)))
+	sizes = append(sizes, (math.Abs(zMinMax[0]-zMinMax[1])/float64(voxelAmnt)))
+
+	voxelSize := -math.MaxFloat64
+	for _, value := range sizes {
+		if value > voxelSize {
+			voxelSize = value
+		}
+	}
+
+	var xSize int = int(math.Floor(math.Abs(xMinMax[0]-xMinMax[1]) / voxelSize))
+	var ySize int = int(math.Floor(math.Abs(yMinMax[0]-yMinMax[1]) / voxelSize))
+	var zSize int = int(math.Floor(math.Abs(zMinMax[0]-zMinMax[1]) / voxelSize))
+
+	voxels := make([][][][]int, xSize+4)
+	for i := 0; i < len(voxels); i++ {
+		voxels[i] = make([][][]int, ySize+4)
+		for j := 0; j < len(voxels[i]); j++ {
+			voxels[i][j] = make([][]int, zSize+4)
+			for k := 0; k < zSize+4; k++ {
+				voxels[i][j][k] = []int{}
+			}
+		}
+	}
+
+	for i, point := range points {
+		xIndex := int(math.Floor(math.Abs(xMinMax[0]-point.X) / voxelSize))
+		yIndex := int(math.Floor(math.Abs(yMinMax[0]-point.Y) / voxelSize))
+		zIndex := int(math.Floor(math.Abs(zMinMax[0]-point.Z) / voxelSize))
+		voxels[xIndex][yIndex][zIndex] = append(voxels[xIndex][yIndex][zIndex], i)
+	}
+
+	pointThres := int(float64(len(points)) * precentCheck)
+
+	indicesToDelete := []int{}
+
+	for _, xArray := range voxels {
+		for _, yArray := range xArray {
+			for _, pointIndices := range yArray {
+				if len(pointIndices) < pointThres {
+					indicesToDelete = append(indicesToDelete, pointIndices...)
+				}
+			}
+		}
+	}
+
+	slices.Sort(indicesToDelete)
+	slices.Reverse(indicesToDelete)
+
+	for _, val := range indicesToDelete {
+		points = slices.Delete(points, val, val)
+	}
+
+	return points
 }
 
 func filterMesh(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelSize float64, voxels [][][]uint8) {
