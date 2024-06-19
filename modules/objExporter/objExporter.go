@@ -1,8 +1,10 @@
 package objExporter
 
 import (
+	"encoding/json"
 	"fmt"
 	"modules/greedyMesher"
+	"os"
 	"strconv"
 	"strings"
 
@@ -13,125 +15,131 @@ func Test() byte {
 	return 0
 }
 
+type Point struct {
+	X float32
+	Y float32
+	Z float32
+}
+
 func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 	vertSet := hashset.New()
 
 	for _, face := range faces {
-		switch cornerAmount := len(face.VoxelCoords); cornerAmount{
+		switch cornerAmount := len(face.VoxelCoords); cornerAmount {
 		case 1:
-			switch faceOrientation := face.FaceIndex; faceOrientation{
+			switch faceOrientation := face.FaceIndex; faceOrientation {
 			case 0:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 1:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 2:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 3:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 4:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 5:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			default:
 				fmt.Printf("\nError in faceOrientation in GetVerticesFromFaces(), Expected 0-5, Got: %d", faceOrientation)
 			}
 		case 2:
-			switch faceOrientation := face.FaceIndex; faceOrientation{
+			switch faceOrientation := face.FaceIndex; faceOrientation {
 			case 0:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 1:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])-0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 2:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])+0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 3:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[1][1])+0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 4:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])+0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			case 5:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[0][2])-0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0])-0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0])+0.5, float32(face.VoxelCoords[0][1])-0.5, float32(face.VoxelCoords[1][2])+0.5}
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			default:
 				fmt.Printf("\nError in faceOrientation in GetVerticesFromFaces(), Expected 0-5, Got: %d", faceOrientation)
@@ -170,4 +178,19 @@ func getVertexFromString(vertex string) [3]float32 {
 		return [3]float32{}
 	}
 	return [3]float32{float32(x), float32(y), float32(z)}
+}
+
+func PointsToJson(points [][3]float32) {
+	toJSON := []Point{}
+	for _, point := range points {
+		toJSON = append(toJSON, Point{X: point[0], Y: point[1], Z: point[2]})
+	}
+
+	file, errs := os.Create("NewPointCloud.JSON")
+	if errs != nil {
+		panic("Failed to write to file:" + errs.Error())
+	}
+
+	enc := json.NewEncoder(file)
+	enc.Encode(toJSON)
 }

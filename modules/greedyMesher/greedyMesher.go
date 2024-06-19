@@ -105,7 +105,7 @@ func combineVoxels3(voxels [][][]bool, orientation int, isUp bool) []Face {
 	} else {
 		dirOffset = -1
 	}
-	
+
 	for dir, dirArray := range voxels {
 		currentSlice := make([][]bool, len(voxels[0]))
 		for x := 0; x < len(voxels[0]); x++ {
@@ -116,55 +116,55 @@ func combineVoxels3(voxels [][][]bool, orientation int, isUp bool) []Face {
 		}
 
 		var assumeAir bool = false
-		if (!isUp && dir == 0) || (isUp && dir == len(voxels) -1) {
+		if (!isUp && dir == 0) || (isUp && dir == len(voxels)-1) {
 			assumeAir = true
-		} 
+		}
 
 		for x, xArray := range dirArray {
-			for y, _ := range xArray {
+			for y := range xArray {
 				if currentSlice[x][y] && (assumeAir || !voxels[dir+dirOffset][x][y]) {
 					var xIncreasePossible bool = false
 					var yIncreasePossible bool = false
 
 					var corners [][3]int = [][3]int{{dir, x, y}}
-					
-					if (x + 1 < len(currentSlice) && currentSlice[x+1][y]) && (assumeAir ||!voxels[dir+dirOffset][x+1][y]) {
+
+					if (x+1 < len(currentSlice) && currentSlice[x+1][y]) && (assumeAir || !voxels[dir+dirOffset][x+1][y]) {
 						xIncreasePossible = true
-					} else if (y + 1 < len(currentSlice[0]) && currentSlice[x][y+1]) && (assumeAir || !voxels[dir+dirOffset][x][y+1]) {
+					} else if (y+1 < len(currentSlice[0]) && currentSlice[x][y+1]) && (assumeAir || !voxels[dir+dirOffset][x][y+1]) {
 						yIncreasePossible = true
 					}
 
 					// fmt.Printf("\nxIncreasePossible: %t, yIncreasePossible: %t\n", xIncreasePossible, yIncreasePossible)
 					if xIncreasePossible {
-						corners = append(corners, [3]int{dir, x+1, y})
+						corners = append(corners, [3]int{dir, x + 1, y})
 						for xIncreasePossible {
 							var currX int = corners[1][1]
-							if (currX + 1 < len(currentSlice) && currentSlice[currX+1][y]) && (assumeAir || !voxels[dir+dirOffset][currX+1][y]) {
+							if (currX+1 < len(currentSlice) && currentSlice[currX+1][y]) && (assumeAir || !voxels[dir+dirOffset][currX+1][y]) {
 								// fmt.Println("X Increase Possible")
 								// fmt.Printf("	Size Constraint: %t, Voxel Present: %t, Assume Air: %t, Empty Voxel Above: %t\n", currX + 1 < len(currentSlice), currentSlice[currX+1][y], assumeAir, !voxels[dir+dirOffset][currX+1][y])
 								corners[1][1] += 1
 							} else {
-								xIncreasePossible = false                 
+								xIncreasePossible = false
 								yIncreasePossible = true
 							}
 						}
 						for yIncreasePossible {
 							var currY = corners[1][2]
 							for currX := corners[0][1]; currX <= corners[1][1]; currX++ {
-								if !((currY + 1 < len(currentSlice[0]) && currentSlice[currX][currY+1]) && (assumeAir || !voxels[dir+dirOffset][currX][currY+1])) {
+								if !((currY+1 < len(currentSlice[0]) && currentSlice[currX][currY+1]) && (assumeAir || !voxels[dir+dirOffset][currX][currY+1])) {
 									yIncreasePossible = false
 								}
 							}
-							if (yIncreasePossible) {
+							if yIncreasePossible {
 								corners[1][2] += 1
 							}
 						}
 					}
 					if yIncreasePossible {
-						corners = append(corners, [3]int{dir, x, y+1})
+						corners = append(corners, [3]int{dir, x, y + 1})
 						for yIncreasePossible {
 							var currY int = corners[1][2]
-							if (currY + 1 < len(currentSlice[0]) && currentSlice[x][currY+1]) && (assumeAir || !voxels[dir+dirOffset][x][currY+1]) {
+							if (currY+1 < len(currentSlice[0]) && currentSlice[x][currY+1]) && (assumeAir || !voxels[dir+dirOffset][x][currY+1]) {
 								// fmt.Println("Y Increase Possible")
 								// fmt.Printf("	Size Constraint: %t, Voxel Present: %t, Assume Air: %t, Empty Voxel Above: %t\n", currY + 1 < len(currentSlice[0]), currentSlice[x][currY+1], assumeAir, !voxels[dir+dirOffset][x][currY+1])
 								corners[1][2] += 1
@@ -176,16 +176,16 @@ func combineVoxels3(voxels [][][]bool, orientation int, isUp bool) []Face {
 						for xIncreasePossible {
 							var currX = corners[1][1]
 							for currY := corners[0][2]; currY <= corners[1][2]; currY++ {
-								if !((currX + 1 < len(currentSlice) && currentSlice[currX+1][currY]) && (assumeAir || !voxels[dir+dirOffset][currX+1][currY])) {
+								if !((currX+1 < len(currentSlice) && currentSlice[currX+1][currY]) && (assumeAir || !voxels[dir+dirOffset][currX+1][currY])) {
 									xIncreasePossible = false
 								}
 							}
-							if (xIncreasePossible) {
+							if xIncreasePossible {
 								corners[1][1] += 1
 							}
 						}
 					}
-					
+
 					switch length := len(corners); length {
 					case 1:
 						currentSlice[corners[0][1]][corners[0][2]] = false
@@ -229,7 +229,7 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 	} else {
 		checkOffset = -1
 	}
-	
+
 	for z := 0; z < len(voxels); z++ {
 		currentSlice := make([][]bool, len(voxels[0]))
 		for x := 0; x < len(voxels[0]); x++ {
@@ -240,31 +240,31 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 		}
 
 		assumeAir := false
-		if (!isUp && z == 0) || (isUp && z == len(voxels) -1){
+		if (!isUp && z == 0) || (isUp && z == len(voxels)-1) {
 			assumeAir = true
-		} 
+		}
 		for x := 0; x < len(currentSlice); x++ {
 			for y := 0; y < len(currentSlice[0]); y++ {
 				currVoxel := currentSlice[x][y]
-				if currVoxel && (assumeAir || !voxels[z + checkOffset][x][y]){
+				if currVoxel && (assumeAir || !voxels[z+checkOffset][x][y]) {
 					// fmt.Printf("\n	CurrentVoxel: [%d, %d, %d]\n", z, x, y)
 					// fmt.Printf("\n	IsFace: !voxels[%d + %d][%d][%d]", z, checkOffset, x, y)
-					x1, y1, z1 := remapXYZ(x,y,z, orientation)
+					x1, y1, z1 := remapXYZ(x, y, z, orientation)
 					corners := [][3]int{{x1, y1, z1}}
-					
+
 					currY, actualY := y, y
 					currX := x
 					nextFace, faceComplete := true, false
 					if y+1 != len(voxels[0][0]) {
-						nextFace = currentSlice[currX][currY+1] && (assumeAir || !voxels[z + checkOffset][currX][currY])
+						nextFace = currentSlice[currX][currY+1] && (assumeAir || !voxels[z+checkOffset][currX][currY])
 					} else {
 						nextFace = false
 					}
 					for !faceComplete {
 						for nextFace {
-							if currY + 1 != len(currentSlice[0]) {
+							if currY+1 != len(currentSlice[0]) {
 								currY += 1
-								nextFace = currentSlice[currX][currY] && (assumeAir || !voxels[z + checkOffset][currX][currY])
+								nextFace = currentSlice[currX][currY] && (assumeAir || !voxels[z+checkOffset][currX][currY])
 							} else {
 								nextFace = false
 							}
@@ -290,9 +290,8 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 						corners = append(corners, [3]int{x4, y4, z4})
 					}
 
-
 					for startX := x; startX <= currX; startX++ {
-						for startY := y; startY <= actualY; startY++{
+						for startY := y; startY <= actualY; startY++ {
 							currentSlice[startX][startY] = false
 						}
 					}
@@ -309,7 +308,7 @@ func combineVoxels2(voxels [][][]bool, orientation FaceOrientation, isUp bool) [
 	return greedyMeshed
 }
 
-func remapXYZ(x,y,z int, orientation FaceOrientation) (int, int, int){
+func remapXYZ(x, y, z int, orientation FaceOrientation) (int, int, int) {
 	switch orientation {
 	case up:
 		return x, y, z
@@ -367,7 +366,7 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 					}
 					var faceFound, maxXReached bool = false, false
 					//Creates a new array to record the corners of the face being generated. Initalizes it with the voxel (dir, x, y)
-					var faceBounds [][3]int = [][3]int{[3]int{dir, x, y}}
+					var faceBounds [][3]int = [][3]int{{dir, x, y}}
 
 					//Initalizes bounds for the x and y expansion of the face.
 					cornerBounds := [2]int{x, y}
@@ -435,7 +434,7 @@ func combineVoxels(refSlice [][][]bool, orientationOffset, orientationDirection 
 					if len(faceBounds) == 1 {
 						currentSlice[faceBounds[0][1]][faceBounds[0][2]] = false
 					} else if len(faceBounds) == 2 {
-						for curX := 0; curX < cornerBounds[0] - faceBounds[1][1]; curX++ {
+						for curX := 0; curX < cornerBounds[0]-faceBounds[1][1]; curX++ {
 							currentSlice[curX][faceBounds[0][2]] = false
 						}
 					}
