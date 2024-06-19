@@ -11,15 +11,15 @@ import (
 	"strconv"
 )
 
-var jsonFilePath string = "./example_files/footballPCJSON.json"
-var convertedJsonFileName string = "pointCloud.JSON"
-// var convertedJsonFilePath string = "./pointCloud.JSON"
+// var jsonFilePath string = "./example_files/SeaverSignPCJSON.json"
+// var convertedJsonFileName string = "pointCloud.JSON"
+var convertedJsonFilePath string = "./pointCloud.JSON"
 
-var defaultVoxelSize float64 = 0.05
+var defaultVoxelSize float64 = 0.01
 
 func main() {
 	// commented line for going from meshroom json data to a cleaned up version this program uses
-	var convertedJsonFilePath string = pointCloudDecoder.GenerateFloatJson(jsonFilePath, convertedJsonFileName)
+	// var convertedJsonFilePath string = pointCloudDecoder.GenerateFloatJson(jsonFilePath, convertedJsonFileName)
 	runtime.GC()
 	var pointData pointCloudDecoder.PointData = pointCloudDecoder.DecodeFromFloatJsonFromPath(convertedJsonFilePath)
 	fmt.Printf("Running Program\n%s Points Loaded\n", strconv.Itoa(len(pointData.Points)))
@@ -67,8 +67,8 @@ func main() {
 	// voxels[6][6][8] = 10
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
-	
-	greedyMesher.GenerateFaceJson(faces)
+	vertices := objExporter.GetVerticesFromFaces(faces)
+	fmt.Print(vertices)
 	runtime.GC()
 
 	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
