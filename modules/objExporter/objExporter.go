@@ -11,26 +11,64 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 )
 
-func Test() byte {
-	return 0
-}
-
 type PointData struct {
-	Points []Point
+	Points    []Point
 	VoxelSize float32
 }
 
 type Point struct {
-	X float32
-	Y float32
-	Z float32
+	X     float32
+	Y     float32
+	Z     float32
 	Value float32
 }
 
-func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
-	vertSet := hashset.New()
+func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vertexMatrix [][][]bool, vertexMap map[string]int) [][]int {
+	meshFaces := make([][]int, 0)
 
 	for _, face := range faces {
+		switch cornerAmount := len(face.VoxelCoords); cornerAmount {
+		case 1:
+			meshFaces = append(meshFaces, triangulateVertices(face.VoxelCoords, vertexMap)...)
+		case 2:
+			
+		default:
+			fmt.Printf("\nError in face cornerAmount in GetMeshFacesFromVertices. Expected: 1 or 2 Got: %d\n", cornerAmount)
+		}
+	}
+
+	return meshFaces
+}
+
+func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int{
+	triangulatedFaces := make([][]int, 0)
+
+
+
+	return triangulatedFaces
+}
+
+func determineCollision(edge [2][3]int, existingEdges [][2][3]int) bool {
+	var collisionFound bool = false
+	for _, existingEdge := range existingEdges {
+		
+	}
+}
+
+func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[string]int) {
+	vertSet := hashset.New()
+
+	var maxX int = 0
+	var maxY int = 0
+	var maxZ int = 0
+
+	for _, face := range faces {
+		for _, coord := range face.VoxelCoords {
+			maxX = max(maxX, coord[0])
+			maxY = max(maxY, coord[1])
+			maxZ = max(maxZ, coord[2])
+		}
+
 		switch cornerAmount := len(face.VoxelCoords); cornerAmount {
 		case 1:
 			switch faceOrientation := face.FaceIndex; faceOrientation {
@@ -154,16 +192,34 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 			fmt.Printf("\nError in corner amount in GetVerticesFromFaces(), Expected 1 or 2, Got: %d\n", cornerAmount)
 		}
 	}
-	vertArray := make([][3]float32, vertSet.Size())
+	vertMatrix := make([][][]bool, (maxX+1)*2)
+	for x := 0; x < (maxX+1)*2; x++ {
+		vertMatrix[x] = make([][]bool, (maxY+1)*2)
+		for y := 0; y < (maxY+1)*2; y++ {
+			vertMatrix[x][y] = make([]bool, (maxZ+1)*2)
+		}
+	}
+
+	vertMap := make(map[string]int)
+
+	vertArray := make([][3]int, vertSet.Size())
 	for index, value := range vertSet.Values() {
 		stringVertex := fmt.Sprint(value)
-		vertArray[index] = getVertexFromString(stringVertex)
+		vertex := getVertexFromString(stringVertex)
+		intVertex := [3]int{int(vertex[0]*2), int(vertex[1]*2), int(vertex[2]*2)}
+		vertArray[index] = intVertex
+		vertMatrix[intVertex[0]][intVertex[1]][intVertex[2]] = true
+		vertMap[getStringFromIntVertex(intVertex)] = index
 	}
-	return vertArray
+	return vertArray, vertMatrix, vertMap
 }
 
 func getStringFromVertex(vertex [3]float32) string {
 	return fmt.Sprintf("%f,%f,%f", vertex[0], vertex[1], vertex[2])
+}
+
+func getStringFromIntVertex(vertex [3]int) string {
+	return fmt.Sprintf("%d,%d,%d", vertex[0], vertex[1], vertex[2])
 }
 
 func getVertexFromString(vertex string) [3]float32 {
@@ -186,10 +242,30 @@ func getVertexFromString(vertex string) [3]float32 {
 	return [3]float32{float32(x), float32(y), float32(z)}
 }
 
-func PointsToJson(points [][3]float32) {
+func getIntVertexFromString(vertex string) [3]int {
+	splitStrings := strings.Split(vertex, ",")
+	x, err := strconv.ParseFloat(splitStrings[0], 32)
+	if err != nil {
+		fmt.Printf("\nError on getVertexFromString attempted to parse %s into float.\n", splitStrings[0])
+		return [3]int{}
+	}
+	y, err := strconv.ParseFloat(splitStrings[1], 32)
+	if err != nil {
+		fmt.Printf("\nError on getVertexFromString attempted to parse %s into float.\n", splitStrings[1])
+		return [3]int{}
+	}
+	z, err := strconv.ParseFloat(splitStrings[2], 32)
+	if err != nil {
+		fmt.Printf("\nError on getVertexFromString attempted to parse %s into float.\n", splitStrings[2])
+		return [3]int{}
+	}
+	return [3]int{int(x), int(y), int(z)}
+}
+
+func PointsToJson(points [][3]int) {
 	toJSON := []Point{}
 	for _, point := range points {
-		toJSON = append(toJSON, Point{X: point[0], Y: point[1], Z: point[2], Value: 1})
+		toJSON = append(toJSON, Point{X: float32(point[0])/2, Y: float32(point[1])/2, Z: float32(point[2])/2, Value: 1})
 	}
 
 	file, errs := os.Create("FacePointData.JSON")

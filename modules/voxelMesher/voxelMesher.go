@@ -23,7 +23,7 @@ type pointList struct {
 	VoxelSize float64
 }
 
-func PointcloudPreprocessFilter(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelAmnt int, precentCheck float64) []pointCloudDecoder.Point {
+func PointCloudPreprocessFilter(xMinMax, yMinMax, zMinMax [2]float64, points []pointCloudDecoder.Point, voxelAmnt int, precentCheck float64) []pointCloudDecoder.Point {
 	sizes := []float64{}
 	sizes = append(sizes, (math.Abs(xMinMax[0]-xMinMax[1])/float64(voxelAmnt)))
 	sizes = append(sizes, (math.Abs(yMinMax[0]-yMinMax[1])/float64(voxelAmnt)))
