@@ -41,7 +41,6 @@ func main() {
 	pointData.Points = voxelMesher.PointcloudPreprocessFilter(xMinMax, yMinMax, zMinMax, pointData.Points, 100, .01)
 	voxels := voxelMesher.MinMaxMesh(xMinMax, yMinMax, zMinMax, pointData.Points, defaultVoxelSize, true)
 	runtime.GC()
-	// voxelMesher.GenerateVoxelJson(voxels, defaultVoxelSize)
 
 	// xSize := 10
 	// ySize := 10
@@ -67,7 +66,9 @@ func main() {
 	// voxels[6][6][8] = 10
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
+	greedyMesher.GenerateFaceJson(faces)
 	vertices := objExporter.GetVerticesFromFaces(faces)
+	objExporter.VoxelsToJson(voxels)
 	objExporter.PointsToJson(vertices)
 	runtime.GC()
 

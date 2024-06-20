@@ -94,24 +94,6 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 		case 2:
 			switch faceOrientation := face.FaceIndex; faceOrientation {
 			case 0:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-			case 1:
-				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
-				vertSet.Add(getStringFromVertex(newVertex))
-			case 2:
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
@@ -120,7 +102,7 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-			case 3:
+			case 1:
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
@@ -129,7 +111,7 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-			case 4:
+			case 2:
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
@@ -138,7 +120,7 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
-			case 5:
+			case 3:
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
@@ -146,6 +128,24 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) [][3]float32 {
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+			case 4:
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+			case 5:
+				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
+				vertSet.Add(getStringFromVertex(newVertex))
+				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 			default:
 				fmt.Printf("\nError in faceOrientation in GetVerticesFromFaces(), Expected 0-5, Got: %d", faceOrientation)
@@ -192,11 +192,37 @@ func PointsToJson(points [][3]float32) {
 		toJSON = append(toJSON, Point{X: point[0], Y: point[1], Z: point[2], Value: 1})
 	}
 
-	file, errs := os.Create("NewPointCloud.JSON")
+	file, errs := os.Create("FacePointData.JSON")
 	if errs != nil {
 		panic("Failed to write to file:" + errs.Error())
 	}
 
 	enc := json.NewEncoder(file)
-	enc.Encode(PointData{Points: toJSON, VoxelSize: 1})
+	enc.Encode(PointData{Points: toJSON, VoxelSize: 0.1})
+}
+
+func VoxelsToJson(voxels [][][]uint8) {
+	file, errs := os.Create("VoxelMatrix.JSON")
+	if errs != nil {
+		panic("Failed to write to file:" + errs.Error())
+	}
+
+	const voxelValueThreshold = 0
+
+	enc := json.NewEncoder(file)
+	cleanedPoints := []Point{}
+	for xIndex, xArray := range voxels {
+		for yIndex, yArray := range xArray {
+			for zIndex, value := range yArray {
+				if value > voxelValueThreshold {
+					point := Point{X: float32(xIndex), Y: float32(yIndex), Z: float32(zIndex), Value: float32(value)}
+					cleanedPoints = append(cleanedPoints, point)
+				}
+			}
+		}
+	}
+
+	fmt.Println("Clean Points Got: " + strconv.Itoa(len(cleanedPoints)))
+
+	enc.Encode(PointData{Points: cleanedPoints, VoxelSize: 1})
 }
