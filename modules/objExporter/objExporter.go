@@ -6,6 +6,7 @@ import (
 	"math"
 	"modules/greedyMesher"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -32,7 +33,7 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 		case 1:
 			meshFaces = append(meshFaces, triangulateVertices(face.VoxelCoords, vertexMap)...)
 		case 2:
-			
+
 		default:
 			fmt.Printf("\nError in face cornerAmount in GetMeshFacesFromVertices. Expected: 1 or 2 Got: %d\n", cornerAmount)
 		}
@@ -41,13 +42,112 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 	return meshFaces
 }
 
-func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int{
+func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int {
 	triangulatedFaces := make([][]int, 0)
-	//createdEdges := make([][]float32, 0)
-	
+	createdEdges := make([][2][3]int, 0)
+	// createdEdgeColliders := make([][2][3]float32, 0)
 
+	for index, vertex := range vertices {
+		//targetVertex is the vertex that the vertex will attempt to create a triangle with
+		//for now we assume that each vertex automatically will attempt to form a triangle with its proceeding vertex
+		var targetVertex [3]int
+		if index < len(vertices)-1 {
+			targetVertex = vertices[index+1]
+		} else {
+			targetVertex = vertices[0]
+		}
+
+		//Check to see if an edge with the vertex and targetVertex has already been created
+		var vertexConnectedToTarget bool = false
+		for _, edge := range createdEdges {
+			var vertexFound bool = false
+			var targetVertexFound bool = false
+
+			for _, edgeVertex := range edge {
+				if reflect.DeepEqual(vertex, edgeVertex) {
+					vertexFound = true
+				} else if reflect.DeepEqual(targetVertex, edgeVertex) {
+					targetVertexFound = true
+				}
+			}
+
+			if vertexFound && targetVertexFound {
+				vertexConnectedToTarget = true
+			}
+		}
+
+		if !vertexConnectedToTarget {
+			//If an edge was not created we know that a triangle with the targetVertex has not been created
+			//We will then attempt to create that triangle and create all possible triangles with the vertex selected
+			var allPossibleTrianglesMade bool = false
+			for !allPossibleTrianglesMade {
+				//var oldTargetPoint [3]int = [3]int{targetVertex[0], targetVertex[1], targetVertex[2]}
+
+			}
+		}
+	}
 
 	return triangulatedFaces
+}
+
+func getMidPoint(pointA [3]int, pointB [3]int) [3]float32 {
+	//Similar to the rest of the helper functions this function ignores the z axis. The z is only inputed and outputed to retain information about the point
+	//Only calculates the midpoint in terms of the z access
+	//Also assumes pointA has the same z value as pointB
+
+	//alpha is the distance between pointA and pointB
+	var alpha float64 = math.Sqrt(math.Pow(float64(pointB[0]-pointA[0]), 2) + math.Pow(float64(pointB[1]-pointA[1]), 2))
+	//delta is the angle created from a triangle that is made from pointA, pointB, and [3]int{pointB[0], pointA[1]}
+	var delta float64 = math.Atan2(float64(pointB[1]-pointA[1]), float64(pointB[0]-pointA[0]))
+
+	if delta == 0 {
+		alpha = math.Sqrt(math.Pow(float64(pointB[0]-pointA[0]), 2) + math.Pow(float64(pointB[1]-pointA[1])+0.0001, 2))
+		delta = math.Atan2(float64(pointB[1]-pointA[1])+0.0001, float64(pointB[0]-pointA[0]))
+	}
+
+	var pX float32 = float32(math.Cos(delta) * (alpha / 2)) + float32(pointA[0])
+	var pY float32 = float32(math.Sin(delta) * (alpha / 2)) + float32(pointA[1])
+
+	return [3]float32{pX, pY, float32(pointA[2])}
+}
+
+func GetMidPointTester() {
+	fmt.Println("\nTesting getMidPoint()")
+	p1 := [3]int{1, 1, 0}
+	q1 := [3]int{10, 1, 0}
+
+	fmt.Printf("\nTest Case 1, Input: [%d, %d], [%d, %d] Got:", p1[0], p1[1], q1[0], q1[1])
+	result := getMidPoint(p1, q1)
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
+	p1 = [3]int{1, 1, 0}
+	q1 = [3]int{1, 10, 0}
+
+	fmt.Printf("\nTest Case 2, Input: [%d, %d], [%d, %d] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = getMidPoint(p1, q1)
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
+	p1 = [3]int{1, 1, 0}
+	q1 = [3]int{4, 4, 0}
+
+	fmt.Printf("\nTest Case 3, Input: [%d, %d], [%d, %d] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = getMidPoint(p1, q1)
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
+	p1 = [3]int{0, 0, 0}
+	q1 = [3]int{0, 0, 0}
+
+	fmt.Printf("\nTest Case 4, Input: [%d, %d], [%d, %d] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = getMidPoint(p1, q1)
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
+	p1 = [3]int{1, 1, 0}
+	q1 = [3]int{-4, -4, 0}
+
+	fmt.Printf("\nTest Case 5, Input: [%d, %d], [%d, %d] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = getMidPoint(p1, q1)
+	fmt.Printf("[%f, %f]", result[0], result[1])
+	fmt.Println()
 }
 
 func edgeOffsetter(edge [2][3]float32) [2][3]float32 {
@@ -55,20 +155,26 @@ func edgeOffsetter(edge [2][3]float32) [2][3]float32 {
 	var offsetDistance float64 = 0.01
 
 	//alpha here is the hypotnuse created from the triangle that is made from edge[0], edge[1], and [3]int{edge[1][0], edge[0][1]}
-	var alpha float64 = math.Sqrt(math.Pow(float64(edge[1][0] - edge[0][0]), 2.0) + math.Pow(float64(edge[1][1] - edge[0][1]), 2))
+	var alpha float64 = math.Sqrt(math.Pow(float64(edge[1][0]-edge[0][0]), 2.0) + math.Pow(float64(edge[1][1]-edge[0][1]), 2))
 	//delta here is the angle created from the triangle that is made from edge[0], edge[1], and [3]int{edge[1][0], edge[0][1]}
-	var delta float64 = math.Atan2(float64(edge[1][1] - edge[0][1]), float64(edge[1][0] - edge[0][0]))
+	var delta float64 = math.Atan2(float64(edge[1][1]-edge[0][1]), float64(edge[1][0]-edge[0][0]))
+
+	if delta == 0 {
+		edge[1][1] += 0.0001 
+		alpha = math.Sqrt(math.Pow(float64(edge[1][0]-edge[0][0]), 2.0) + math.Pow(float64(edge[1][1]-edge[0][1]), 2))
+		delta = math.Atan2(float64(edge[1][1]-edge[0][1]), float64(edge[1][0]-edge[0][0]))
+	}
 
 	//p1 and p2 are the new edge[0] and edge[1] respectively
-	var p2X = math.Cos(delta) * (alpha - offsetDistance)
-	var p2Y = math.Sin(delta) * (alpha - offsetDistance)
+	var p2X float64 = math.Cos(delta) * (alpha - offsetDistance) + float64(edge[0][0])
+	var p2Y float64 = math.Sin(delta) * (alpha - offsetDistance) + float64(edge[0][1])
 
 	var p2 [3]float32 = [3]float32{float32(p2X), float32(p2Y), edge[1][2]}
-	
-	delta = math.Atan2(float64(edge[1][0] - edge[0][0]), float64(edge[1][1] - edge[0][1]))
 
-	var p1X = float64(edge[1][0]) - (math.Sin(delta) * (alpha - offsetDistance))
-	var p1Y = float64(edge[1][1]) - (math.Cos(delta) * (alpha - offsetDistance))
+	delta = math.Atan2(float64(edge[1][0]-edge[0][0]), float64(edge[1][1]-edge[0][1]))
+
+	var p1X float64 = float64(edge[1][0]) - (math.Sin(delta) * (alpha - offsetDistance))
+	var p1Y float64 = float64(edge[1][1]) - (math.Cos(delta) * (alpha - offsetDistance))
 
 	var p1 [3]float32 = [3]float32{float32(p1X), float32(p1Y), edge[0][2]}
 
@@ -76,23 +182,28 @@ func edgeOffsetter(edge [2][3]float32) [2][3]float32 {
 }
 
 func EdgeOffsetterTester() {
+	fmt.Println("\nTesting edgeOffsetter()")
 	p1 := [3]float32{1, 1, 0}
 	q1 := [3]float32{10, 1, 0}
-	
-	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
-	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
-	
+
+	fmt.Printf("\nTest Case 1, Input: [[%f, %f],[%f, %f]] Got:", p1[0], p1[1], q1[0], q1[1])
+	result := edgeOffsetter([2][3]float32{p1, q1})
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
 	p1 = [3]float32{0, 0, 0}
 	q1 = [3]float32{1, 1, 0}
-	
-	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
-	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
+
+	fmt.Printf("\nTest Case 2, Input: [[%f, %f],[%f, %f]] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = edgeOffsetter([2][3]float32{p1, q1})
+	fmt.Printf("[%f, %f]", result[0], result[1])
 
 	p1 = [3]float32{1, 1, 0}
 	q1 = [3]float32{1, 2, 0}
-	
-	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
-	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
+
+	fmt.Printf("\nTest Case 3, Input: [[%f, %f],[%f, %f]] Got:", p1[0], p1[1], q1[0], q1[1])
+	result = edgeOffsetter([2][3]float32{p1, q1})
+	fmt.Printf("[%f, %f]", result[0], result[1])
+
 	fmt.Println()
 }
 
@@ -125,12 +236,16 @@ func determineOrientation(pointA [3]float32, pointB [3]float32, pointC [3]float3
 	//For usage with 3d points however this only check orientation of x and y. Ignores z
 	var orientationValue float32 = ((pointB[1] - pointA[1]) * (pointC[0] - pointB[0])) - ((pointB[0] - pointA[0]) * (pointC[1] - pointB[1]))
 
-	if orientationValue == 0 {return 0}
-	if orientationValue > 0 {return 1}
+	if orientationValue == 0 {
+		return 0
+	}
+	if orientationValue > 0 {
+		return 1
+	}
 	return 2
 }
 
-func determineEdgePointIntersection(edge [2][3]float32, point[3]float32) bool {
+func determineEdgePointIntersection(edge [2][3]float32, point [3]float32) bool {
 	//For usage only where the edge points are collinear with the point, Also assumes you are checking on a xy plane only. Ignores z. Includes [3]int for specific use case in triangulateVertices()
 	if (point[0] <= max(edge[0][0], edge[1][0]) && point[0] >= min(edge[0][0], edge[1][0])) && (point[1] <= max(edge[0][1], edge[1][1]) && point[1] >= min(edge[0][1], edge[1][1])) {
 		return true
@@ -139,14 +254,15 @@ func determineEdgePointIntersection(edge [2][3]float32, point[3]float32) bool {
 }
 
 func DetermineCollisionTester() {
-	//Tester for determineCollision()
+	fmt.Println("Testing determineCollision()")
+
 	p1 := [3]float32{1, 1, 0}
 	q1 := [3]float32{10, 1, 0}
 	p2 := [3]float32{1, 2, 0}
 	q2 := [3]float32{10, 2, 0}
 
 	fmt.Printf("\nTest Case 1, Expected: False, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
-	
+
 	p1 = [3]float32{10, 0, 0}
 	q1 = [3]float32{0, 10, 0}
 	p2 = [3]float32{0, 0, 0}
@@ -334,7 +450,7 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[
 	for index, value := range vertSet.Values() {
 		stringVertex := fmt.Sprint(value)
 		vertex := getVertexFromString(stringVertex)
-		intVertex := [3]int{int(vertex[0]*2), int(vertex[1]*2), int(vertex[2]*2)}
+		intVertex := [3]int{int(vertex[0] * 2), int(vertex[1] * 2), int(vertex[2] * 2)}
 		vertArray[index] = intVertex
 		vertMatrix[intVertex[0]][intVertex[1]][intVertex[2]] = true
 		vertMap[getStringFromIntVertex(intVertex)] = index
@@ -393,7 +509,7 @@ func getIntVertexFromString(vertex string) [3]int {
 func PointsToJson(points [][3]int) {
 	toJSON := []Point{}
 	for _, point := range points {
-		toJSON = append(toJSON, Point{X: float32(point[0])/2, Y: float32(point[1])/2, Z: float32(point[2])/2, Value: 1})
+		toJSON = append(toJSON, Point{X: float32(point[0]) / 2, Y: float32(point[1]) / 2, Z: float32(point[2]) / 2, Value: 1})
 	}
 
 	file, errs := os.Create("FacePointData.JSON")
