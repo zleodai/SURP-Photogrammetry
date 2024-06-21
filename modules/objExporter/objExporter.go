@@ -45,7 +45,7 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int {
 	triangulatedFaces := make([][]int, 0)
 	createdEdges := make([][2][3]int, 0)
-	// createdEdgeColliders := make([][2][3]float32, 0)
+	createdEdgeColliders := make([][2][3]float32, 0)
 
 	for index, vertex := range vertices {
 		//targetVertex is the vertex that the vertex will attempt to create a triangle with
@@ -81,13 +81,105 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int {
 			//We will then attempt to create that triangle and create all possible triangles with the vertex selected
 			var allPossibleTrianglesMade bool = false
 			for !allPossibleTrianglesMade {
-				//var oldTargetPoint [3]int = [3]int{targetVertex[0], targetVertex[1], targetVertex[2]}
-
+				var oldTargetPoint [3]int = [3]int{targetVertex[0], targetVertex[1], targetVertex[2]}
+				var midPoint = getMidPoint(vertex, targetVertex)
+				
 			}
 		}
 	}
 
 	return triangulatedFaces
+}
+
+func TriangulateVerticesTester() {
+	fmt.Println("\nTesting triangulateVertices()")
+	p1 := [3]int{1, 1, 0}
+	p2 := [3]int{2, 1, 0}
+	p3 := [3]int{2, 2, 0}
+	p4 := [3]int{1, 2, 0}
+	vertices := [][3]int{p1, p2, p3, p4}
+
+	vertexMap := map[string]int{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+
+	fmt.Print("\nTest Case 1\n	Input: ")
+	fmt.Print(vertices)
+	fmt.Print("\n	Result:\n")
+	result := triangulateVertices(vertices, vertexMap)
+	fmt.Print(result)
+	fmt.Println()
+
+	p1 = [3]int{1, 1, 0}
+	p2 = [3]int{1, 2, 0}
+	p3 = [3]int{2, 2, 0}
+	p4 = [3]int{2, 1, 0}
+	vertices = [][3]int{p1, p2, p3, p4}
+
+	vertexMap = map[string]int{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+
+	fmt.Print("\nTest Case 2\n	Input: ")
+	fmt.Print(vertices)
+	fmt.Print("\n	Result:\n")
+	result = triangulateVertices(vertices, vertexMap)
+	fmt.Print(result)
+	fmt.Println()
+
+	p1 = [3]int{1, 1, 0}
+	p2 = [3]int{1, 2, 0}
+	p3 = [3]int{1, 5, 0}
+	p4 = [3]int{5, 5, 0}
+	p5 := [3]int{5, 4, 0}
+	p6 := [3]int{5, 1, 0}
+	vertices = [][3]int{p1, p2, p3, p4, p5, p6}
+
+	vertexMap = map[string]int{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+	vertexMap[getStringFromIntVertex(p5)] = 4
+	vertexMap[getStringFromIntVertex(p6)] = 5
+
+	fmt.Print("\nTest Case 3\n	Input: ")
+	fmt.Print(vertices)
+	fmt.Print("\n	Result:\n")
+	result = triangulateVertices(vertices, vertexMap)
+	fmt.Print(result)
+	fmt.Println()
+
+	p1 = [3]int{1, 1, 0}
+	p2 = [3]int{1, 4, 0}
+	p3 = [3]int{2, 4, 0}
+	p4 = [3]int{2, 5, 0}
+	p5 = [3]int{1, 5, 0}
+	p6 = [3]int{1, 8, 0}
+	p7 := [3]int{8, 8, 0}
+	p8 := [3]int{8, 1, 0}
+	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
+
+	vertexMap = map[string]int{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+	vertexMap[getStringFromIntVertex(p5)] = 4
+	vertexMap[getStringFromIntVertex(p6)] = 5
+	vertexMap[getStringFromIntVertex(p7)] = 6
+	vertexMap[getStringFromIntVertex(p8)] = 7
+
+	fmt.Print("\nTest Case 4\n	Input: ")
+	fmt.Print(vertices)
+	fmt.Print("\n	Result:\n")
+	result = triangulateVertices(vertices, vertexMap)
+	fmt.Print(result)
+	fmt.Println()
 }
 
 func getMidPoint(pointA [3]int, pointB [3]int) [3]float32 {
