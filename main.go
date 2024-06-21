@@ -65,6 +65,9 @@ func main() {
 	voxels[5][6][8] = 10
 	voxels[6][6][8] = 10
 
+	// objExporter.EdgeOffsetterTester()
+	// objExporter.DetermineCollisionTester()
+
 	faces := greedyMesher.GreedyMesh(voxels, 2)
 	greedyMesher.GenerateFaceJson(faces)
 	vertices, vertexMatrix, vertexMap := objExporter.GetVerticesFromFaces(faces)

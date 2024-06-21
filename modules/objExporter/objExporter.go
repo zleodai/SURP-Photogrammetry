@@ -3,6 +3,7 @@ package objExporter
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"modules/greedyMesher"
 	"os"
 	"strconv"
@@ -42,17 +43,144 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 
 func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][]int{
 	triangulatedFaces := make([][]int, 0)
-
+	//createdEdges := make([][]float32, 0)
+	
 
 
 	return triangulatedFaces
 }
 
-func determineCollision(edge [2][3]int, existingEdges [][2][3]int) bool {
-	var collisionFound bool = false
-	for _, existingEdge := range existingEdges {
-		
+func edgeOffsetter(edge [2][3]float32) [2][3]float32 {
+	//For now offsets by 0.01
+	var offsetDistance float64 = 0.01
+
+	//alpha here is the hypotnuse created from the triangle that is made from edge[0], edge[1], and [3]int{edge[1][0], edge[0][1]}
+	var alpha float64 = math.Sqrt(math.Pow(float64(edge[1][0] - edge[0][0]), 2.0) + math.Pow(float64(edge[1][1] - edge[0][1]), 2))
+	//delta here is the angle created from the triangle that is made from edge[0], edge[1], and [3]int{edge[1][0], edge[0][1]}
+	var delta float64 = math.Atan2(float64(edge[1][1] - edge[0][1]), float64(edge[1][0] - edge[0][0]))
+
+	//p1 and p2 are the new edge[0] and edge[1] respectively
+	var p2X = math.Cos(delta) * (alpha - offsetDistance)
+	var p2Y = math.Sin(delta) * (alpha - offsetDistance)
+
+	var p2 [3]float32 = [3]float32{float32(p2X), float32(p2Y), edge[1][2]}
+	
+	delta = math.Atan2(float64(edge[1][0] - edge[0][0]), float64(edge[1][1] - edge[0][1]))
+
+	var p1X = float64(edge[1][0]) - (math.Sin(delta) * (alpha - offsetDistance))
+	var p1Y = float64(edge[1][1]) - (math.Cos(delta) * (alpha - offsetDistance))
+
+	var p1 [3]float32 = [3]float32{float32(p1X), float32(p1Y), edge[0][2]}
+
+	return [2][3]float32{p1, p2}
+}
+
+func EdgeOffsetterTester() {
+	p1 := [3]float32{1, 1, 0}
+	q1 := [3]float32{10, 1, 0}
+	
+	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
+	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
+	
+	p1 = [3]float32{0, 0, 0}
+	q1 = [3]float32{1, 1, 0}
+	
+	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
+	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
+
+	p1 = [3]float32{1, 1, 0}
+	q1 = [3]float32{1, 2, 0}
+	
+	fmt.Printf("\nTest Case 1, Input: [[%f, %f, %f],[%f, %f, %f]] Got:", p1[0], p1[1], p1[2], q1[0], q1[1], q1[2])
+	fmt.Print(edgeOffsetter([2][3]float32{p1, q1}))
+	fmt.Println()
+}
+
+func determineCollision(edge [2][3]float32, otherEdge [2][3]float32) bool {
+	//a = edge[0], b = edge[1], c = otherEdge[0], d = otherEdge[1]
+	var abcOrientation int = determineOrientation(edge[0], edge[1], otherEdge[0])
+	var abdOrientation int = determineOrientation(edge[0], edge[1], otherEdge[1])
+	var cdaOrientation int = determineOrientation(otherEdge[0], otherEdge[1], edge[0])
+	var cdbOrientation int = determineOrientation(otherEdge[0], otherEdge[1], edge[1])
+
+	if abcOrientation != abdOrientation && cdaOrientation != cdbOrientation {
+		return true
 	}
+	if abcOrientation == 0 && determineEdgePointIntersection(edge, otherEdge[0]) {
+		return true
+	}
+	if abdOrientation == 0 && determineEdgePointIntersection(edge, otherEdge[1]) {
+		return true
+	}
+	if cdaOrientation == 0 && determineEdgePointIntersection(otherEdge, edge[0]) {
+		return true
+	}
+	if cdbOrientation == 0 && determineEdgePointIntersection(otherEdge, edge[1]) {
+		return true
+	}
+	return false
+}
+
+func determineOrientation(pointA [3]float32, pointB [3]float32, pointC [3]float32) int {
+	//For usage with 3d points however this only check orientation of x and y. Ignores z
+	var orientationValue float32 = ((pointB[1] - pointA[1]) * (pointC[0] - pointB[0])) - ((pointB[0] - pointA[0]) * (pointC[1] - pointB[1]))
+
+	if orientationValue == 0 {return 0}
+	if orientationValue > 0 {return 1}
+	return 2
+}
+
+func determineEdgePointIntersection(edge [2][3]float32, point[3]float32) bool {
+	//For usage only where the edge points are collinear with the point, Also assumes you are checking on a xy plane only. Ignores z. Includes [3]int for specific use case in triangulateVertices()
+	if (point[0] <= max(edge[0][0], edge[1][0]) && point[0] >= min(edge[0][0], edge[1][0])) && (point[1] <= max(edge[0][1], edge[1][1]) && point[1] >= min(edge[0][1], edge[1][1])) {
+		return true
+	}
+	return false
+}
+
+func DetermineCollisionTester() {
+	//Tester for determineCollision()
+	p1 := [3]float32{1, 1, 0}
+	q1 := [3]float32{10, 1, 0}
+	p2 := [3]float32{1, 2, 0}
+	q2 := [3]float32{10, 2, 0}
+
+	fmt.Printf("\nTest Case 1, Expected: False, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
+	
+	p1 = [3]float32{10, 0, 0}
+	q1 = [3]float32{0, 10, 0}
+	p2 = [3]float32{0, 0, 0}
+	q2 = [3]float32{10, 10, 0}
+
+	fmt.Printf("\nTest Case 2, Expected: True, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
+
+	p1 = [3]float32{-5, -5, 0}
+	q1 = [3]float32{0, 0, 0}
+	p2 = [3]float32{1, 1, 0}
+	q2 = [3]float32{10, 10, 0}
+
+	fmt.Printf("\nTest Case 3, Expected: False, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
+
+	p1 = [3]float32{0, 0, 0}
+	q1 = [3]float32{1, 1, 0}
+	p2 = [3]float32{2, 2, 0}
+	q2 = [3]float32{1.00001, 1.00001, 0}
+
+	fmt.Printf("\nTest Case 3, Expected: False, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
+
+	p1 = [3]float32{0, 0, 0}
+	q1 = [3]float32{0, 1, 0}
+	p2 = [3]float32{0, 1, 0}
+	q2 = [3]float32{1, 1, 0}
+
+	fmt.Printf("\nTest Case 3, Expected: True, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
+
+	p1 = [3]float32{0, 0, 0}
+	q1 = [3]float32{0, 1, 0}
+	p2 = [3]float32{0, 1, 0}
+	q2 = [3]float32{1, 1, 0}
+
+	fmt.Printf("\nTest Case 3, Expected: False, Got: %t\n", determineCollision(edgeOffsetter([2][3]float32{p1, q1}), edgeOffsetter([2][3]float32{p2, q2})))
 }
 
 func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[string]int) {
