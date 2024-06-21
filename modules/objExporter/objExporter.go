@@ -215,15 +215,14 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 				}
 				
 				//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
-				var triangleCreated bool = false
 				for otherIndex, otherVertex := range vertices {
-					if !triangleCreated && (otherIndex != index && otherIndex != targetVertexIndex) {
+					if !triangleMade && (otherIndex != index && otherIndex != targetVertexIndex) {
 						var collisionDetected bool = false
 						var newEdge [2][3]float32 = [2][3]float32{midPoint, {float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}}
 
 						//Iterate through all edgeColliders (except for any edgeCollider midPoint is already on) to detect if creating a new edge will cause any collisions
 						for edgeIndex, edge := range createdEdgeColliders {
-							if !triangleCreated && !(midPointOnEdge && edgeIndex == midPointEdgeIndex) {
+							if !triangleMade && !(midPointOnEdge && edgeIndex == midPointEdgeIndex) {
 								if determineCollision(newEdge, edge) {
 									collisionDetected = true
 								}
@@ -265,7 +264,7 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 								var bcEdge [2][3]float32 = edgeOffsetter(bcIntEdge)
 								var caEdge [2][3]float32 = edgeOffsetter(caIntEdge)
 								createdEdgeColliders = append(createdEdgeColliders, abEdge, bcEdge, caEdge)
-								triangleCreated = true
+								triangleMade = true
 							}
 						}
 					}
@@ -372,10 +371,33 @@ func TriangulateVerticesTester() {
 	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
 	fmt.Print(result)
 	fmt.Println()
-}
 
-func getDistance(pointA [3]int, pointB[3]int) float32 {
-	return float32(math.Sqrt(math.Pow(float64(pointB[0]-pointA[0]), 2) + math.Pow(float64(pointB[1]-pointA[1]), 2)))
+	p1 = [3]int{0, 0, 0}
+	p2 = [3]int{0, 6, 0}
+	p3 = [3]int{4, 6, 0}
+	p4 = [3]int{6, 6, 0}
+	p5 = [3]int{6, 3, 0}
+	p6 = [3]int{6, 0, 0}
+	p7 = [3]int{4, 0, 0}
+	p8 = [3]int{1, 0, 0}
+	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
+	vertexMap = map[string]int{}
+	customEdgeColliders = [][2][3]float32{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+	vertexMap[getStringFromIntVertex(p5)] = 4
+	vertexMap[getStringFromIntVertex(p6)] = 5
+	vertexMap[getStringFromIntVertex(p7)] = 6
+	vertexMap[getStringFromIntVertex(p8)] = 7
+
+	fmt.Print("\nTest Case 5\n	Input: ")
+	fmt.Print(vertices)
+	fmt.Print("\n	Result:\n")
+	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
+	fmt.Print(result)
+	fmt.Println()
 }
 
 func getMidPoint(pointA [3]int, pointB [3]int) [3]float32 {
