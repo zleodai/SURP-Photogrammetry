@@ -68,7 +68,7 @@ func main() {
 	// objExporter.EdgeOffsetterTester()
 	// objExporter.DetermineCollisionTester()
 	// objExporter.GetMidPointTester()
-	objExporter.TriangulateVerticesTester()
+	objExporter.TriangulateVerticesTester(false)
 
 	faces := greedyMesher.GreedyMesh(voxels, 2)
 	greedyMesher.GenerateFaceJson(faces)
