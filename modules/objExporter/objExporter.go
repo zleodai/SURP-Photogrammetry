@@ -528,32 +528,32 @@ func TriangulateVerticesTester(testTime bool) {
 	fmt.Print(result)
 	fmt.Println()
 
-	// p1 = [3]int{0, 0, 0}
-	// p2 = [3]int{0, 6, 0}
-	// p3 = [3]int{4, 6, 0}
-	// p4 = [3]int{6, 6, 0}
-	// p5 = [3]int{6, 3, 0}
-	// p6 = [3]int{6, 0, 0}
-	// p7 = [3]int{4, 0, 0}
-	// p8 = [3]int{1, 0, 0}
-	// vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
-	// vertexMap = map[string]int{}
-	// customEdgeColliders = [][2][3]float32{}
-	// vertexMap[getStringFromIntVertex(p1)] = 0
-	// vertexMap[getStringFromIntVertex(p2)] = 1
-	// vertexMap[getStringFromIntVertex(p3)] = 2
-	// vertexMap[getStringFromIntVertex(p4)] = 3
-	// vertexMap[getStringFromIntVertex(p5)] = 4
-	// vertexMap[getStringFromIntVertex(p6)] = 5
-	// vertexMap[getStringFromIntVertex(p7)] = 6
-	// vertexMap[getStringFromIntVertex(p8)] = 7
+	p1 = [3]int{0, 0, 0}
+	p2 = [3]int{0, 6, 0}
+	p3 = [3]int{4, 6, 0}
+	p4 = [3]int{6, 6, 0}
+	p5 = [3]int{6, 3, 0}
+	p6 = [3]int{6, 0, 0}
+	p7 = [3]int{4, 0, 0}
+	p8 = [3]int{1, 0, 0}
+	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
+	vertexMap = map[string]int{}
+	customEdgeColliders = [][2][3]float32{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+	vertexMap[getStringFromIntVertex(p5)] = 4
+	vertexMap[getStringFromIntVertex(p6)] = 5
+	vertexMap[getStringFromIntVertex(p7)] = 6
+	vertexMap[getStringFromIntVertex(p8)] = 7
 
-	// fmt.Print("\nTest Case 5\n	Input: ")
-	// fmt.Print(vertices)
-	// result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	// fmt.Print("\n	Result:")
-	// fmt.Print(result)
-	// fmt.Println()
+	fmt.Print("\nTest Case 5\n	Input: ")
+	fmt.Print(vertices)
+	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
+	fmt.Print("\n	Result:")
+	fmt.Print(result)
+	fmt.Println()
 
 	if testTime {
 		fmt.Println("\nTesting 100000 simple runs")
