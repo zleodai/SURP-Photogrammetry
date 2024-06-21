@@ -8,6 +8,7 @@ import (
 	"modules/greedyMesher"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -61,7 +62,15 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 	for index, vertex := range vertices {
 		var debug bool = false
 
+		if index == 404 {
+			debug = true
+		}
+
 		if debug {fmt.Printf("\n		For vertex %d: [%d, %d]", index, vertex[0], vertex[1])}
+
+		if debug {fmt.Printf("\n		EdgeColliders %f", createdEdgeColliders)}
+
+
 		//targetVertex is the vertex that the vertex will attempt to create a triangle with
 		//for now we assume that each vertex automatically will attempt to form a triangle with its proceeding vertex
 		var targetVertex [3]int
@@ -104,13 +113,14 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 			var midPointEdgeIndex int = 0
 
 			//First check if middlepoint is on an existing edge
-			for intEdgeIndex, intEdge := range createdEdges {
-				var float32Edge [2][3]float32 = [2][3]float32{{float32(intEdge[0][0]), float32(intEdge[0][1]), float32(intEdge[0][2])}, {float32(intEdge[1][0]), float32(intEdge[1][1]), float32(intEdge[1][2])}}
-
-				if determineOrientation(float32Edge[0], float32Edge[1], midPoint) == 0 && determineEdgePointIntersection(float32Edge, midPoint) {
+			for intEdgeIndex, edge := range createdEdgeColliders {
+				if determineOrientation(edge[0], midPoint, edge[1]) == 0 && determineEdgePointIntersection(edge, midPoint) {
 					midPointEdgeIndex = intEdgeIndex
+					midPointOnEdge = true
 				}
 			}
+
+			if debug && midPointOnEdge{fmt.Printf("\n		midPointEdgeIndex: %d", midPointEdgeIndex)}
 			
 			//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
 			var triangleCreated bool = false
@@ -125,6 +135,7 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 						if !collisionDetected && (!triangleCreated && !(midPointOnEdge && edgeIndex == midPointEdgeIndex)) {
 							if determineCollision(newEdge, edge) {
 								if debug {fmt.Print("\n				Collision 1 detected")}
+								if debug {fmt.Printf("\n				Collision on Edge [%f, %f], [%f, %f]", edge[0][0], edge[0][1], edge[1][0], edge[1][1])}
 								collisionDetected = true
 							}
 						}
@@ -172,20 +183,35 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 								}
 							}
 						}
+						
+						if !collisionDetected {
+							//Check to see if midpoint is the same point as another point
+							for _, vertexX := range vertices {
+								var float32VertexX [3]float32 = [3]float32{float32(vertexX[0]), float32(vertexX[1]), float32(vertexX[2])}
+								if reflect.DeepEqual(midPoint, float32VertexX) {
+									if debug {fmt.Print("\n					Collision 6 detected")}
+									collisionDetected = true
+								}
+							}
+						}
 					}
 
 					if debug {fmt.Printf("\n				collisionDetected: %t", collisionDetected)}
 
 					//When no collision is detected we make the new triangle
 					if !collisionDetected{
-						if debug {fmt.Printf("				No Collision Detected For [%d, %d]", otherVertex[0], otherVertex[1])}
+						if debug {fmt.Printf("\n				No Collision Detected For [%d, %d]", otherVertex[0], otherVertex[1])}
 						var newFace [3]int = [3]int{vertexMap[getStringFromIntVertex(vertex)], vertexMap[getStringFromIntVertex(targetVertex)], vertexMap[getStringFromIntVertex(otherVertex)]}
 
 						//First try to detect if the triangle we are making is has already been created
 						var triangleAlreadyCreated bool = false
 
 						for _, face := range triangulatedFaces {
-							if reflect.DeepEqual(newFace, face) {
+							newFaceCopy := []int{newFace[0], newFace[1], newFace[2]}
+							sort.Ints(newFaceCopy)
+							faceCopy := []int{face[0], face[1], face[2]}
+							sort.Ints(faceCopy)
+							if reflect.DeepEqual(newFaceCopy, faceCopy) {
 								triangleAlreadyCreated = true
 							}
 						}
@@ -217,6 +243,10 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 		var allPossibleTrianglesMade bool = false
 
 		var debug bool = false
+
+		if index == 404 {
+			debug = true
+		}
 		
 		if debug {fmt.Printf("\n		For Vertex %d: [%d, %d]", index, vertex[0], vertex[1])}
 
@@ -233,10 +263,9 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 					var collisionFound bool = false
 					for _, edge := range createdEdgeColliders {
 						if determineCollision(newEdge, edge) {
-							collisionFound = true
-
-							if determineOrientation(newEdge[0], newEdge[1], edge[0]) == 0 && determineOrientation(newEdge[0], newEdge[1], edge[1]) == 0 {
-								collisionFound = false
+							//First Check to see if newEdge is parralel with existing collider, if it isnt parralell collision is found
+							if !(determineOrientation(newEdge[0], newEdge[1], edge[0]) == 0 && determineOrientation(newEdge[0], newEdge[1], edge[1]) == 0) {
+								collisionFound = true
 							}
 						}
 					}
@@ -245,130 +274,137 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 						if debug {fmt.Printf("\n\n		Found Target Vertex %d: [%d, %d]", otherIndex, otherVertex[0], otherVertex[1])}
 						targetVertex = otherVertex
 						targetVertexIndex = otherIndex
-					}
-				}
-			}
 
-			//Create new triangle if targetVertexIndex is different from oldTargetVertexIndex
-			if oldTargetVertexIndex != targetVertexIndex {
-				//Repeat code from original triangle creation on sides
-				if debug {fmt.Printf("\n			Target Vertex %d: [%d, %d]", targetVertexIndex, targetVertex[0], targetVertex[1])}
-				//If an edge was not created we know that a triangle with the targetVertex has not been created
-				var midPoint = getMidPoint(vertex, targetVertex)
+						//Repeat code from original triangle creation on sides
+						if debug {fmt.Printf("\n			Target Vertex %d: [%d, %d]", targetVertexIndex, targetVertex[0], targetVertex[1])}
+						//If an edge was not created we know that a triangle with the targetVertex has not been created
+						var midPoint = getMidPoint(vertex, targetVertex)
 
-				if debug {fmt.Printf("\n			Middle Vertex: [%f, %f]", midPoint[0], midPoint[1])}
+						if debug {fmt.Printf("\n			Middle Vertex: [%f, %f]", midPoint[0], midPoint[1])}
 
-				var midPointOnEdge bool = false
-				var midPointEdgeIndex int = 0
+						var midPointOnEdge bool = false
+						var midPointEdgeIndex int = 0
 
-				//First check if middlepoint is on an existing edge
-				for intEdgeIndex, intEdge := range createdEdges {
-					var float32Edge [2][3]float32 = [2][3]float32{{float32(intEdge[0][0]), float32(intEdge[0][1]), float32(intEdge[0][2])}, {float32(intEdge[1][0]), float32(intEdge[1][1]), float32(intEdge[1][2])}}
-
-					if determineOrientation(float32Edge[0], float32Edge[1], midPoint) == 0 && determineEdgePointIntersection(float32Edge, midPoint) {
-						midPointEdgeIndex = intEdgeIndex
-					}
-				}
-				
-				//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
-				var triangleCreated bool = false
-				for otherIndex, otherVertex := range vertices {
-					if debug {fmt.Printf("\n\n				Other Vertex %d: [%d, %d]", otherIndex, otherVertex[0], otherVertex[1])}
-					if !triangleCreated && (otherIndex != index && otherIndex != targetVertexIndex) {
-						var collisionDetected bool = false
-						var newEdge [2][3]float32 = [2][3]float32{midPoint, {float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}}
-
-						//Iterate through all edgeColliders (except for any edgeCollider midPoint is already on) to detect if creating a new edge will cause any collisions
-						for edgeIndex, edge := range createdEdgeColliders {
-							if !collisionDetected && (!triangleCreated && !(midPointOnEdge && edgeIndex == midPointEdgeIndex)) {
-								if determineCollision(newEdge, edge) {
-									if debug {fmt.Print("\n					Collision 1 detected")}
-									collisionDetected = true
-								}
+						//First check if middlepoint is on an existing edge
+						for intEdgeIndex, edge := range createdEdgeColliders {
+							if determineOrientation(edge[0], midPoint, edge[1]) == 0 && determineEdgePointIntersection(edge, midPoint) {
+								midPointEdgeIndex = intEdgeIndex
+								midPointOnEdge = true
 							}
 						}
 
-						//Special Cases
-						if !collisionDetected {
-							var float32Vertex [3]float32 = [3]float32{float32(vertex[0]), float32(vertex[1]), float32(vertex[2])}
-							var float32TargetVertex [3]float32 = [3]float32{float32(targetVertex[0]), float32(targetVertex[1]), float32(targetVertex[2])}
-							//Check and see if the newEdge will collide with targetVertex
-							if determineOrientation(newEdge[0], newEdge[1], float32Vertex) == 0 && determineEdgePointIntersection(newEdge, float32Vertex) {
-								if debug {fmt.Print("\n					Collision 2 detected")}
-								collisionDetected = true
-							}
-							//Check and see if the newEdge will collide with vertex 
-							if determineOrientation(newEdge[0], newEdge[1], float32TargetVertex) == 0 && determineEdgePointIntersection(newEdge, float32TargetVertex) {
-								if debug {fmt.Print("\n					Collision 3 detected")}
-								collisionDetected = true
-							}
+						if debug && midPointOnEdge{fmt.Printf("\n			midPointEdgeIndex: %d", midPointEdgeIndex)}
+						
+						//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
+						var triangleCreated bool = false
+						for otherIndex, otherVertex := range vertices {
+							if debug {fmt.Printf("\n\n				Other Vertex %d: [%d, %d]", otherIndex, otherVertex[0], otherVertex[1])}
+							if !triangleCreated && (otherIndex != index && otherIndex != targetVertexIndex) {
+								var collisionDetected bool = false
+								var newEdge [2][3]float32 = [2][3]float32{midPoint, {float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}}
 
-							if !collisionDetected {
-								//Check to see if an edge created by vertex and otherVertex will collide with other points
-								var float32OtherVertex [3]float32 = [3]float32{float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}
-								for indexX, pointX := range vertices {
-									if !collisionDetected && (indexX != index && indexX != targetVertexIndex && indexX != otherIndex) {
-										var float32PointX [3]float32 = [3]float32{float32(pointX[0]), float32(pointX[1]), float32(pointX[2])}
-										if determineOrientation(float32Vertex, float32OtherVertex, float32PointX) == 0 && determineEdgePointIntersection([2][3]float32{float32Vertex, float32OtherVertex}, float32PointX) {
-											if debug {fmt.Print("\n					Collision 4 detected")}
+								//Iterate through all edgeColliders (except for any edgeCollider midPoint is already on) to detect if creating a new edge will cause any collisions
+								for edgeIndex, edge := range createdEdgeColliders {
+									if !collisionDetected && (!triangleCreated && !(midPointOnEdge && edgeIndex == midPointEdgeIndex)) {
+										if determineCollision(newEdge, edge) {
+											if debug {fmt.Print("\n					Collision 1 detected")}
 											collisionDetected = true
 										}
 									}
 								}
-							}
 
-							if !collisionDetected {
-								//Check to see if an edge created by targetVertex and otherVertex will collide with other points
-								var float32OtherVertex [3]float32 = [3]float32{float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}
-								for indexX, pointX := range vertices {
-									if !collisionDetected && (indexX != index && indexX != targetVertexIndex && indexX != otherIndex) {
-										var float32PointX [3]float32 = [3]float32{float32(pointX[0]), float32(pointX[1]), float32(pointX[2])}
-										if determineOrientation(float32TargetVertex, float32OtherVertex, float32PointX) == 0 && determineEdgePointIntersection([2][3]float32{float32TargetVertex, float32OtherVertex}, float32PointX) {
-											if debug {fmt.Print("\n					Collision 5 detected")}
-											collisionDetected = true
+								//Special Cases
+								if !collisionDetected {
+									var float32Vertex [3]float32 = [3]float32{float32(vertex[0]), float32(vertex[1]), float32(vertex[2])}
+									var float32TargetVertex [3]float32 = [3]float32{float32(targetVertex[0]), float32(targetVertex[1]), float32(targetVertex[2])}
+									//Check and see if the newEdge will collide with targetVertex
+									if determineOrientation(newEdge[0], newEdge[1], float32Vertex) == 0 && determineEdgePointIntersection(newEdge, float32Vertex) {
+										if debug {fmt.Print("\n					Collision 2 detected")}
+										collisionDetected = true
+									}
+									//Check and see if the newEdge will collide with vertex 
+									if determineOrientation(newEdge[0], newEdge[1], float32TargetVertex) == 0 && determineEdgePointIntersection(newEdge, float32TargetVertex) {
+										if debug {fmt.Print("\n					Collision 3 detected")}
+										collisionDetected = true
+									}
+
+									if !collisionDetected {
+										//Check to see if an edge created by vertex and otherVertex will collide with other points
+										var float32OtherVertex [3]float32 = [3]float32{float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}
+										for indexX, pointX := range vertices {
+											if !collisionDetected && (indexX != index && indexX != targetVertexIndex && indexX != otherIndex) {
+												var float32PointX [3]float32 = [3]float32{float32(pointX[0]), float32(pointX[1]), float32(pointX[2])}
+												if determineOrientation(float32Vertex, float32OtherVertex, float32PointX) == 0 && determineEdgePointIntersection([2][3]float32{float32Vertex, float32OtherVertex}, float32PointX) {
+													if debug {fmt.Print("\n					Collision 4 detected")}
+													collisionDetected = true
+												}
+											}
+										}
+									}
+
+									if !collisionDetected {
+										//Check to see if an edge created by targetVertex and otherVertex will collide with other points
+										var float32OtherVertex [3]float32 = [3]float32{float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}
+										for indexX, pointX := range vertices {
+											if !collisionDetected && (indexX != index && indexX != targetVertexIndex && indexX != otherIndex) {
+												var float32PointX [3]float32 = [3]float32{float32(pointX[0]), float32(pointX[1]), float32(pointX[2])}
+												if determineOrientation(float32TargetVertex, float32OtherVertex, float32PointX) == 0 && determineEdgePointIntersection([2][3]float32{float32TargetVertex, float32OtherVertex}, float32PointX) {
+													if debug {fmt.Print("\n					Collision 5 detected")}
+													collisionDetected = true
+												}
+											}
+										}
+									}
+
+									if !collisionDetected {
+										//Check to see if midpoint is the same point as another point
+										for _, vertexX := range vertices {
+											var float32VertexX [3]float32 = [3]float32{float32(vertexX[0]), float32(vertexX[1]), float32(vertexX[2])}
+											if reflect.DeepEqual(midPoint, float32VertexX) {
+												if debug {fmt.Print("\n					Collision 6 detected")}
+												collisionDetected = true
+											}
 										}
 									}
 								}
-							}
 
-							if !collisionDetected {
-								//Check to see if midpoint is the same point as otherVertex
-								var float32OtherVertex [3]float32 = [3]float32{float32(otherVertex[0]), float32(otherVertex[1]), float32(otherVertex[2])}
-								if reflect.DeepEqual(midPoint, float32OtherVertex) {
-									if debug {fmt.Print("\n					Collision 6 detected")}
-									collisionDetected = true
+								if debug {fmt.Printf("\n					collisionDetected: %t", collisionDetected)}
+
+								//When no collision is detected we make the new triangle
+								if !collisionDetected{
+									if debug {fmt.Printf("\n					No Collision Detected For [%d, %d]", otherVertex[0], otherVertex[1])}
+									var newFace [3]int = [3]int{vertexMap[getStringFromIntVertex(vertex)], vertexMap[getStringFromIntVertex(targetVertex)], vertexMap[getStringFromIntVertex(otherVertex)]}
+			
+									//First try to detect if the triangle we are making is has already been created
+									var triangleAlreadyCreated bool = false
+			
+									for _, face := range triangulatedFaces {
+										newFaceCopy := []int{newFace[0], newFace[1], newFace[2]}
+										sort.Ints(newFaceCopy)
+										faceCopy := []int{face[0], face[1], face[2]}
+										sort.Ints(faceCopy)
+										if reflect.DeepEqual(newFaceCopy, faceCopy) {
+											triangleAlreadyCreated = true
+											if debug {fmt.Print("\n					triangleAlreadyCreated")}
+										}
+									}
+			
+									if !triangleAlreadyCreated {
+										if debug {fmt.Print("\n						Creating new Triangle")}
+										triangulatedFaces = append(triangulatedFaces, newFace)
+			
+										var abIntEdge [2][3]int = [2][3]int{vertex, targetVertex}
+										var bcIntEdge [2][3]int = [2][3]int{targetVertex, otherVertex}
+										var caIntEdge [2][3]int = [2][3]int{otherVertex, vertex}
+										createdEdges = append(createdEdges, abIntEdge, bcIntEdge, caIntEdge)
+			
+										var abEdge [2][3]float32 = edgeOffsetter(abIntEdge)
+										var bcEdge [2][3]float32 = edgeOffsetter(bcIntEdge)
+										var caEdge [2][3]float32 = edgeOffsetter(caIntEdge)
+										createdEdgeColliders = append(createdEdgeColliders, abEdge, bcEdge, caEdge)
+										triangleMade = true
+									}
 								}
-							}
-						}
-
-						if debug {fmt.Printf("\n					collisionDetected: %t", collisionDetected)}
-
-						//When no collision is detected we make the new triangle
-						if !collisionDetected{
-							var newFace [3]int = [3]int{vertexMap[getStringFromIntVertex(vertex)], vertexMap[getStringFromIntVertex(targetVertex)], vertexMap[getStringFromIntVertex(otherVertex)]}
-
-							//First try to detect if the triangle we are making is has already been created
-							var triangleAlreadyCreated bool = false
-
-							for _, face := range triangulatedFaces {
-								if reflect.DeepEqual(newFace, face) {
-									triangleAlreadyCreated = true
-								}
-							}
-
-							if !triangleAlreadyCreated {
-								triangulatedFaces = append(triangulatedFaces, newFace)
-
-								var abIntEdge [2][3]int = [2][3]int{vertex, targetVertex}
-								var bcIntEdge [2][3]int = [2][3]int{targetVertex, otherVertex}
-								var caIntEdge [2][3]int = [2][3]int{otherVertex, vertex}
-								createdEdges = append(createdEdges, abIntEdge, bcIntEdge, caIntEdge)
-
-								var abEdge [2][3]float32 = edgeOffsetter(abIntEdge)
-								var bcEdge [2][3]float32 = edgeOffsetter(bcIntEdge)
-								var caEdge [2][3]float32 = edgeOffsetter(caIntEdge)
-								createdEdgeColliders = append(createdEdgeColliders, abEdge, bcEdge, caEdge)
-								triangleCreated = true
 							}
 						}
 					}
@@ -462,45 +498,20 @@ func TriangulateVerticesTester(testTime bool) {
 	// fmt.Print(result)
 	// fmt.Println()
 
-	// p1 = [3]int{1, 1, 0}
-	// p2 = [3]int{1, 4, 0}
-	// p3 = [3]int{2, 4, 0}
-	// p4 = [3]int{2, 5, 0}
-	// p5 = [3]int{1, 5, 0}
-	// p6 = [3]int{1, 8, 0}
-	// p7 := [3]int{8, 8, 0}
-	// p8 := [3]int{8, 1, 0}
-	// vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
-	// vertexMap = map[string]int{}
-	// customEdgeColliders = [][2][3]float32{}
-	// customEdgeColliders = append(customEdgeColliders, [2][3]float32{getMidPoint([3]int{0, 4, 0}, [3]int{0, 5, 0}), getMidPoint(p3, p4)})
-	// vertexMap[getStringFromIntVertex(p1)] = 0
-	// vertexMap[getStringFromIntVertex(p2)] = 1
-	// vertexMap[getStringFromIntVertex(p3)] = 2
-	// vertexMap[getStringFromIntVertex(p4)] = 3
-	// vertexMap[getStringFromIntVertex(p5)] = 4
-	// vertexMap[getStringFromIntVertex(p6)] = 5
-	// vertexMap[getStringFromIntVertex(p7)] = 6
-	// vertexMap[getStringFromIntVertex(p8)] = 7
-
-	// fmt.Print("\nTest Case 4\n	Input: ")
-	// fmt.Print(vertices)
-	// result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	// fmt.Print("\n	Result:")
-	// fmt.Print(result)
-	// fmt.Println()
-
-	p1 = [3]int{0, 0, 0}
-	p2 = [3]int{0, 6, 0}
-	p3 = [3]int{4, 6, 0}
-	p4 = [3]int{6, 6, 0}
-	p5 = [3]int{6, 3, 0}
-	p6 = [3]int{6, 0, 0}
-	p7 = [3]int{4, 0, 0}
-	p8 = [3]int{1, 0, 0}
+	p1 = [3]int{1, 1, 0}
+	p2 = [3]int{1, 4, 0}
+	p3 = [3]int{2, 4, 0}
+	p4 = [3]int{2, 5, 0}
+	p5 = [3]int{1, 5, 0}
+	p6 = [3]int{1, 8, 0}
+	p7 = [3]int{8, 8, 0}
+	p8 = [3]int{8, 1, 0}
 	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
 	vertexMap = map[string]int{}
 	customEdgeColliders = [][2][3]float32{}
+	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.1, 0}, {2, 4.1, 0}})
+	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.5, 0}, {2, 4.5, 0}})
+	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.9, 0}, {2, 4.9, 0}})
 	vertexMap[getStringFromIntVertex(p1)] = 0
 	vertexMap[getStringFromIntVertex(p2)] = 1
 	vertexMap[getStringFromIntVertex(p3)] = 2
@@ -510,12 +521,39 @@ func TriangulateVerticesTester(testTime bool) {
 	vertexMap[getStringFromIntVertex(p7)] = 6
 	vertexMap[getStringFromIntVertex(p8)] = 7
 
-	fmt.Print("\nTest Case 5\n	Input: ")
+	fmt.Print("\nTest Case 4\n	Input: ")
 	fmt.Print(vertices)
 	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
 	fmt.Print("\n	Result:")
 	fmt.Print(result)
 	fmt.Println()
+
+	// p1 = [3]int{0, 0, 0}
+	// p2 = [3]int{0, 6, 0}
+	// p3 = [3]int{4, 6, 0}
+	// p4 = [3]int{6, 6, 0}
+	// p5 = [3]int{6, 3, 0}
+	// p6 = [3]int{6, 0, 0}
+	// p7 = [3]int{4, 0, 0}
+	// p8 = [3]int{1, 0, 0}
+	// vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
+	// vertexMap = map[string]int{}
+	// customEdgeColliders = [][2][3]float32{}
+	// vertexMap[getStringFromIntVertex(p1)] = 0
+	// vertexMap[getStringFromIntVertex(p2)] = 1
+	// vertexMap[getStringFromIntVertex(p3)] = 2
+	// vertexMap[getStringFromIntVertex(p4)] = 3
+	// vertexMap[getStringFromIntVertex(p5)] = 4
+	// vertexMap[getStringFromIntVertex(p6)] = 5
+	// vertexMap[getStringFromIntVertex(p7)] = 6
+	// vertexMap[getStringFromIntVertex(p8)] = 7
+
+	// fmt.Print("\nTest Case 5\n	Input: ")
+	// fmt.Print(vertices)
+	// result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
+	// fmt.Print("\n	Result:")
+	// fmt.Print(result)
+	// fmt.Println()
 
 	if testTime {
 		fmt.Println("\nTesting 100000 simple runs")
