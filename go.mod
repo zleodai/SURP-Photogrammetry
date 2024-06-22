@@ -18,8 +18,8 @@ replace modules/voxelMesher => ./modules/voxelMesher
 
 require modules/pointSorter v1.0.0
 
-require github.com/emirpasic/gods v1.18.1 // indirect
-
 replace modules/pointSorter => ./modules/pointSorter
+
+require github.com/emirpasic/gods v1.18.1 // indirect
 
 go 1.22.3

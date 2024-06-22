@@ -7,4 +7,7 @@ require (
 
 replace modules/greedyMesher => ../greedyMesher
 
+require modules/pointSorter v1.0.0
+replace modules/pointSorter => ../pointSorter
+
 go 1.22.3

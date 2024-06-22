@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"modules/greedyMesher"
+	"modules/pointSorter"
 	"os"
 	"reflect"
 	"sort"
@@ -29,121 +30,261 @@ type Point struct {
 	Value float32
 }
 
-func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vertexMatrix [][][]bool, vertexMap map[string]int) [][3]int {
+func GetMeshFacesFromVertices(faces []greedyMesher.Face, faceMap map[string][][3]int, vertices [][3]int, vertexMatrix [][][]bool, vertexMap map[string]int) [][3]int {
 	meshFaces := make([][3]int, 0)
 
 	for _, face := range faces {
-		switch cornerAmount := len(face.VoxelCoords); cornerAmount {
-		case 1:
-			var customEdgeColliders [][2][3]float32 = [][2][3]float32{}
-			preppedVertices, preppedVertixMap := prepFaceCoordsForTriangle(face.VoxelCoords, int(face.FaceIndex), vertexMap)
-			meshFaces = append(meshFaces, triangulateVertices(preppedVertices, preppedVertixMap, customEdgeColliders)...)
-		case 2:
+		faceVerticies := faceMap[getStringFromFace(face)]
+		involvedVertices := [][3]int{}
 
-		default:
-			fmt.Printf("\nError in face cornerAmount in GetMeshFacesFromVertices. Expected: 1 or 2 Got: %d\n", cornerAmount)
+		var ignoreZ bool = faceVerticies[0][2] == faceVerticies[1][2]
+		var ignoreX bool = faceVerticies[0][0] == faceVerticies[1][0]
+		var ignoreY bool = faceVerticies[0][1] == faceVerticies[1][1]
+		
+		var preppOffset int
+		
+		//ABCD are the respective corners of the box created from two vertices, [min, min] [max, max]
+		//AB will be the inital up pass
+		//BC will be the following pass rigthwards
+		//CD will be the downpass
+		//DA lastly will be the pass leftward
+		if ignoreZ {
+			preppOffset = 0
+			//Ignore Z here
+			//AB, abIndex being yMin to yMax, x set to xMin
+			for abIndex := faceVerticies[0][1]; abIndex <= faceVerticies[1][1]; abIndex++ {
+				if vertexMatrix[faceVerticies[0][0]][abIndex][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{faceVerticies[0][0], abIndex, faceVerticies[0][2]}
+					//First check if vertex is already in the array
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//BC, bcIndex being xMin to xMax, y set to yMax
+			for bcIndex := faceVerticies[0][0]; bcIndex <= faceVerticies[1][0]; bcIndex++ {
+				if vertexMatrix[bcIndex][faceVerticies[1][1]][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{bcIndex, faceVerticies[1][1], faceVerticies[0][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//CD, cdIndex being yMax to yMin, x set to xMax
+			for cdIndex := faceVerticies[1][1]; cdIndex >= faceVerticies[0][1]; cdIndex-- {
+				if vertexMatrix[faceVerticies[1][0]][cdIndex][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{faceVerticies[1][0], cdIndex, faceVerticies[0][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//DA, daIndex being xMax to xMin, y set to yMin
+			for daIndex := faceVerticies[1][0]; daIndex >= faceVerticies[0][0]; daIndex-- {
+				if vertexMatrix[daIndex][faceVerticies[0][1]][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{daIndex, faceVerticies[0][1], faceVerticies[0][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+		} else if ignoreX {
+			preppOffset = 1
+			//Ignore X here
+			//AB, abIndex being yMin to yMax, z set to zMin
+			for abIndex := faceVerticies[0][1]; abIndex <= faceVerticies[1][1]; abIndex++ {
+				if vertexMatrix[faceVerticies[0][0]][abIndex][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{faceVerticies[0][0], abIndex, faceVerticies[0][2]}
+					//First check if vertex is already in the array
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//BC, bcIndex being zMin to zMax, y set to yMax
+			for bcIndex := faceVerticies[0][2]; bcIndex <= faceVerticies[1][2]; bcIndex++ {
+				if vertexMatrix[faceVerticies[0][0]][faceVerticies[1][1]][bcIndex] {
+					var newVertex [3]int = [3]int{faceVerticies[0][0], faceVerticies[1][1], bcIndex}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//CD, cdIndex being yMax to yMin, z set to zMax
+			for cdIndex := faceVerticies[1][1]; cdIndex >= faceVerticies[0][1]; cdIndex-- {
+				if vertexMatrix[faceVerticies[0][0]][cdIndex][faceVerticies[1][2]] {
+					var newVertex [3]int = [3]int{faceVerticies[1][0], cdIndex, faceVerticies[0][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//DA, daIndex being zMax to zMin, y set to yMin
+			for daIndex := faceVerticies[1][2]; daIndex >= faceVerticies[0][2]; daIndex-- {
+				if vertexMatrix[faceVerticies[0][0]][faceVerticies[0][1]][daIndex] {
+					var newVertex [3]int = [3]int{faceVerticies[0][0], faceVerticies[0][1], daIndex}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+		} else if ignoreY {
+			preppOffset = 2
+			//Ignore Y here
+			//AB, abIndex being zMin to zMax, x set to xMin
+			for abIndex := faceVerticies[0][2]; abIndex <= faceVerticies[1][2]; abIndex++ {
+				if vertexMatrix[faceVerticies[0][0]][faceVerticies[0][1]][abIndex] {
+					var newVertex [3]int = [3]int{faceVerticies[0][0], faceVerticies[0][1], abIndex}
+					//First check if vertex is already in the array
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//BC, bcIndex being xMin to xMax, z set to zMax
+			for bcIndex := faceVerticies[0][0]; bcIndex <= faceVerticies[1][0]; bcIndex++ {
+				if vertexMatrix[bcIndex][faceVerticies[0][1]][faceVerticies[1][2]] {
+					var newVertex [3]int = [3]int{bcIndex, faceVerticies[0][1], faceVerticies[1][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//CD, cdIndex being zMax to zMin, x set to xMax
+			for cdIndex := faceVerticies[1][2]; cdIndex >= faceVerticies[0][2]; cdIndex-- {
+				if vertexMatrix[faceVerticies[1][0]][faceVerticies[0][1]][cdIndex] {
+					var newVertex [3]int = [3]int{faceVerticies[1][0], faceVerticies[0][1], cdIndex}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
+			//DA, daIndex being xMax to xMin, z set to zMin
+			for daIndex := faceVerticies[1][0]; daIndex >= faceVerticies[0][0]; daIndex-- {
+				if vertexMatrix[daIndex][faceVerticies[0][1]][faceVerticies[0][2]] {
+					var newVertex [3]int = [3]int{daIndex, faceVerticies[0][1], faceVerticies[0][2]}
+					var alreadyInArray bool = false
+					for _, vertex := range involvedVertices {
+						if reflect.DeepEqual(newVertex, vertex) {
+							alreadyInArray = true
+						}
+					}
+					if !alreadyInArray {
+						involvedVertices = append(involvedVertices, newVertex)
+					}
+				}
+			}
 		}
+		preppedVertices, preppedVertixMap := prepFaceCoordsForTriangle(involvedVertices, int(face.FaceIndex), vertexMap, preppOffset)
+		result := triangulateVertices(preppedVertices, preppedVertixMap)
+		meshFaces = append(meshFaces, result...)
 	}
 
 	return meshFaces
 }
 
-func prepFaceCoordsForTriangle(vertices [][3]int, faceOrientation int, vertexMap map[string]int) ([][3]int, map[string]int) {
+func prepFaceCoordsForTriangle(vertices [][3]int, faceOrientation int, vertexMap map[string]int, preppOffset int) ([][3]int, map[string]int) {
 	preppedVertices := [][3]int{}
 	preppedVertixMap := map[string]int{}
 
-	switch faceOrientation {
+	switch preppOffset {
 	case 0:
 		//z is the same
-		for _, vertex := range vertices {
-			index := vertexMap[getStringFromIntVertex(vertex)]
-			
-		}
+		return vertices, vertexMap
 	case 1:
-		//z is the same
+		//x is the same
 		for _, vertex := range vertices {
 			index := vertexMap[getStringFromIntVertex(vertex)]
+			preppedVertex := [3]int{vertex[1], vertex[2], vertex[0]}
+			preppedVertices = append(preppedVertices, preppedVertex)
+			preppedVertixMap[getStringFromIntVertex(preppedVertex)] = index
 		}
 	case 2:
-		//x is the same
-		for _, vertex := range vertices {
-			index := vertexMap[getStringFromIntVertex(vertex)]
-		}
-	case 3:
-		//x is the same
-		for _, vertex := range vertices {
-			index := vertexMap[getStringFromIntVertex(vertex)]
-		}
-	case 4:
 		//y is the same
 		for _, vertex := range vertices {
 			index := vertexMap[getStringFromIntVertex(vertex)]
-		}
-	case 5:
-		//y is the same
-		for _, vertex := range vertices {
-			index := vertexMap[getStringFromIntVertex(vertex)]
+			preppedVertex := [3]int{vertex[0], vertex[2], vertex[1]}
+			preppedVertices = append(preppedVertices, preppedVertex)
+			preppedVertixMap[getStringFromIntVertex(preppedVertex)] = index
 		}
 	default:
-		fmt.Printf("\nError, faceOrientation in prepFaceCoordsForTriangle() must be from 0 - 5, Got: %d", faceOrientation)
+		fmt.Printf("\nError, preppOffset in prepFaceCoordsForTriangle() must be from 0 - 2, Got: %d", preppOffset)
 	}
+
+	return preppedVertices, preppedVertixMap
 }
 
-func PrepFaceCoordsForTriangleTester() {
-	var p1 [3]int
-	var p2 [3]int
-	var p3 [3]int
-	var p4 [3]int
-	var p5 [3]int
-	var p6 [3]int
-	var p7 [3]int
-	var p8 [3]int
-	var vertices [][3]int
-	var vertexMap map[string]int
-	var result [][3]int
-	var matrixResult map[string]int
-
-	p1 = [3]int{1, 1, 0}
-	p2 = [3]int{1, 4, 0}
-	p3 = [3]int{2, 4, 0}
-	p4 = [3]int{2, 5, 0}
-	p5 = [3]int{1, 5, 0}
-	p6 = [3]int{1, 8, 0}
-	p7 = [3]int{8, 8, 0}
-	p8 = [3]int{8, 1, 0}
-	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
-	vertexMap = map[string]int{}
-	vertexMap[getStringFromIntVertex(p1)] = 0
-	vertexMap[getStringFromIntVertex(p2)] = 1
-	vertexMap[getStringFromIntVertex(p3)] = 2
-	vertexMap[getStringFromIntVertex(p4)] = 3
-	vertexMap[getStringFromIntVertex(p5)] = 4
-	vertexMap[getStringFromIntVertex(p6)] = 5
-	vertexMap[getStringFromIntVertex(p7)] = 6
-	vertexMap[getStringFromIntVertex(p8)] = 7
-
-	fmt.Print("\nTest Case 4\n	Input: ")
-	fmt.Print(vertices)
-	result, matrixResult = prepFaceCoordsForTriangle(vertices, 0, vertexMap)
-	fmt.Print("\n	Result:")
-	fmt.Print(result)
-	fmt.Println()
-	fmt.Print(matrixResult)
-	fmt.Println()
-}
-
-func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdgeColliders [][2][3]float32) [][3]int {
+func triangulateVertices(vertices [][3]int, vertexMap map[string]int) [][3]int {
 	triangulatedFaces := make([][3]int, 0)
 	createdEdges := make([][2][3]int, 0)
 	createdEdgeColliders := make([][2][3]float32, 0)
 	//For the rest of the function we assume createdEdges and createdEdgeColliders will contain same elements with the same index locations. Only difference is createdEdges contains the int versions of the edge
-
-	for _, edgeCollider := range customEdgeColliders {
-		createdEdgeColliders = append(createdEdgeColliders, edgeCollider)
-		var intEdge [2][3]int = [2][3]int{[3]int{int(edgeCollider[0][0] + 0.1), int(edgeCollider[0][1] + 0.1), int(edgeCollider[0][2] + 0.1)}, [3]int{int(edgeCollider[1][0] + 0.1), int(edgeCollider[1][1] + 0.1), int(edgeCollider[1][2] + 0.1)}}
-		createdEdges = append(createdEdges, intEdge)
-	}
-
 	//We first iterate through all the vertices to create all the triangles on the sides
 	for index, vertex := range vertices {
 		var debug bool = false
@@ -219,7 +360,21 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 
 			//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
 			var triangleCreated bool = false
+			
+			var heapArray = []pointSorter.HeapItem{}
+
+
 			for otherIndex, otherVertex := range vertices {
+				var distance float32 = getDistance(vertex, otherVertex)
+				point := pointSorter.HeapItem{Value:[4]int{otherVertex[0], otherVertex[1], otherVertex[2], otherIndex}, Priority:float64(distance), Index:otherIndex}
+				heapArray = append(heapArray, point)
+			}
+
+			distanceOrderedVerticeArray, indexArray := pointSorter.SortVertices(heapArray)
+
+
+			for x, otherVertex := range distanceOrderedVerticeArray {
+				otherIndex := indexArray[x]
 				if debug {
 					fmt.Printf("\n\n			Other Vertex %d: [%d, %d]", otherIndex, otherVertex[0], otherVertex[1])
 				}
@@ -302,6 +457,20 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 										fmt.Print("\n					Collision 6 detected")
 									}
 									collisionDetected = true
+								}
+							}
+						}
+
+						if !collisionDetected {
+							//Check to see if triangle created will harbor another point
+							for indexX, vertexX := range vertices {
+								if indexX != index && indexX != targetVertexIndex && indexX != otherIndex{
+									if determineIfVertexInTriangle(vertex, targetVertex, otherVertex, vertexX) {
+										if debug {
+											fmt.Print("\n					Collision 7 detected")
+										}
+										collisionDetected = true
+									}
 								}
 							}
 						}
@@ -422,7 +591,18 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 
 						//Iterate through otherVertexs to see which ones can make a triangle with targetVertex
 						var triangleCreated bool = false
+						var heapArray = []pointSorter.HeapItem{}
+
 						for otherIndex, otherVertex := range vertices {
+							var distance float32 = getDistance(vertex, otherVertex)
+							point := pointSorter.HeapItem{Value:[4]int{otherVertex[0], otherVertex[1], otherVertex[2], otherIndex}, Priority:float64(distance), Index:otherIndex}
+							heapArray = append(heapArray, point)
+						}
+
+						distanceOrderedVerticeArray, indexArray := pointSorter.SortVertices(heapArray)
+
+						for x, otherVertex := range distanceOrderedVerticeArray {
+							otherIndex := indexArray[x]
 							if debug {
 								fmt.Printf("\n\n				Other Vertex %d: [%d, %d]", otherIndex, otherVertex[0], otherVertex[1])
 							}
@@ -505,6 +685,20 @@ func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdge
 											}
 										}
 									}
+
+									if !collisionDetected {
+										//Check to see if triangle created will harbor another point
+										for indexX, vertexX := range vertices {
+											if indexX != index && indexX != targetVertexIndex && indexX != otherIndex{
+												if determineIfVertexInTriangle(vertex, targetVertex, otherVertex, vertexX) {
+													if debug {
+														fmt.Print("\n					Collision 7 detected")
+													}
+													collisionDetected = true
+												}
+											}
+										}
+									}
 								}
 
 								if debug {
@@ -581,99 +775,7 @@ func TriangulateVerticesTester(testTime bool) {
 	var p8 [3]int
 	var vertices [][3]int
 	var vertexMap map[string]int
-	var customEdgeColliders [][2][3]float32
 	var result [][3]int
-
-	// p1 = [3]int{1, 1, 0}
-	// p2 = [3]int{2, 1, 0}
-	// p3 = [3]int{2, 2, 0}
-	// p4 = [3]int{1, 2, 0}
-	// vertices = [][3]int{p1, p2, p3, p4}
-	// customEdgeColliders = [][2][3]float32{}
-	// vertexMap = map[string]int{}
-	// vertexMap[getStringFromIntVertex(p1)] = 0
-	// vertexMap[getStringFromIntVertex(p2)] = 1
-	// vertexMap[getStringFromIntVertex(p3)] = 2
-	// vertexMap[getStringFromIntVertex(p4)] = 3
-
-	// fmt.Print("\nTest Case 1\n	Input: ")
-	// fmt.Print(vertices)
-	// result := triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	// fmt.Print("\n	Result:")
-	// fmt.Print(result)
-	// fmt.Println()
-
-	// p1 = [3]int{1, 1, 0}
-	// p2 = [3]int{1, 2, 0}
-	// p3 = [3]int{2, 2, 0}
-	// p4 = [3]int{2, 1, 0}
-	// vertices = [][3]int{p1, p2, p3, p4}
-	// customEdgeColliders = [][2][3]float32{}
-	// vertexMap = map[string]int{}
-	// vertexMap[getStringFromIntVertex(p1)] = 0
-	// vertexMap[getStringFromIntVertex(p2)] = 1
-	// vertexMap[getStringFromIntVertex(p3)] = 2
-	// vertexMap[getStringFromIntVertex(p4)] = 3
-
-	// fmt.Print("\nTest Case 2\n	Input: ")
-	// fmt.Print(vertices)
-	// result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	// fmt.Print("\n	Result:")
-	// fmt.Print(result)
-	// fmt.Println()
-
-	// p1 = [3]int{1, 1, 0}
-	// p2 = [3]int{1, 2, 0}
-	// p3 = [3]int{1, 5, 0}
-	// p4 = [3]int{5, 5, 0}
-	// p5 := [3]int{5, 4, 0}
-	// p6 := [3]int{5, 1, 0}
-	// vertices = [][3]int{p1, p2, p3, p4, p5, p6}
-	// customEdgeColliders = [][2][3]float32{}
-	// vertexMap = map[string]int{}
-	// vertexMap[getStringFromIntVertex(p1)] = 0
-	// vertexMap[getStringFromIntVertex(p2)] = 1
-	// vertexMap[getStringFromIntVertex(p3)] = 2
-	// vertexMap[getStringFromIntVertex(p4)] = 3
-	// vertexMap[getStringFromIntVertex(p5)] = 4
-	// vertexMap[getStringFromIntVertex(p6)] = 5
-
-	// fmt.Print("\nTest Case 3\n	Input: ")
-	// fmt.Print(vertices)
-	// result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	// fmt.Print("\n	Result:")
-	// fmt.Print(result)
-	// fmt.Println()
-
-	p1 = [3]int{1, 1, 0}
-	p2 = [3]int{1, 4, 0}
-	p3 = [3]int{2, 4, 0}
-	p4 = [3]int{2, 5, 0}
-	p5 = [3]int{1, 5, 0}
-	p6 = [3]int{1, 8, 0}
-	p7 = [3]int{8, 8, 0}
-	p8 = [3]int{8, 1, 0}
-	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
-	vertexMap = map[string]int{}
-	customEdgeColliders = [][2][3]float32{}
-	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.1, 0}, {2, 4.1, 0}})
-	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.5, 0}, {2, 4.5, 0}})
-	customEdgeColliders = append(customEdgeColliders, [2][3]float32{{0, 4.9, 0}, {2, 4.9, 0}})
-	vertexMap[getStringFromIntVertex(p1)] = 0
-	vertexMap[getStringFromIntVertex(p2)] = 1
-	vertexMap[getStringFromIntVertex(p3)] = 2
-	vertexMap[getStringFromIntVertex(p4)] = 3
-	vertexMap[getStringFromIntVertex(p5)] = 4
-	vertexMap[getStringFromIntVertex(p6)] = 5
-	vertexMap[getStringFromIntVertex(p7)] = 6
-	vertexMap[getStringFromIntVertex(p8)] = 7
-
-	fmt.Print("\nTest Case 4\n	Input: ")
-	fmt.Print(vertices)
-	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
-	fmt.Print("\n	Result:")
-	fmt.Print(result)
-	fmt.Println()
 
 	p1 = [3]int{0, 0, 0}
 	p2 = [3]int{0, 6, 0}
@@ -685,7 +787,6 @@ func TriangulateVerticesTester(testTime bool) {
 	p8 = [3]int{1, 0, 0}
 	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
 	vertexMap = map[string]int{}
-	customEdgeColliders = [][2][3]float32{}
 	vertexMap[getStringFromIntVertex(p1)] = 0
 	vertexMap[getStringFromIntVertex(p2)] = 1
 	vertexMap[getStringFromIntVertex(p3)] = 2
@@ -697,7 +798,7 @@ func TriangulateVerticesTester(testTime bool) {
 
 	fmt.Print("\nTest Case 5\n	Input: ")
 	fmt.Print(vertices)
-	result = triangulateVertices(vertices, vertexMap, customEdgeColliders)
+	result = triangulateVertices(vertices, vertexMap)
 	fmt.Print("\n	Result:")
 	fmt.Print(result)
 	fmt.Println()
@@ -711,13 +812,12 @@ func TriangulateVerticesTester(testTime bool) {
 			p3 = [3]int{2 * rand.IntN(100), 2 * rand.IntN(100), 0}
 			p4 = [3]int{2 * rand.IntN(100), 1 * rand.IntN(100), 0}
 			vertices = [][3]int{p1, p2, p3, p4}
-			customEdgeColliders = [][2][3]float32{}
 			vertexMap = map[string]int{}
 			vertexMap[getStringFromIntVertex(p1)] = 0
 			vertexMap[getStringFromIntVertex(p2)] = 1
 			vertexMap[getStringFromIntVertex(p3)] = 2
 			vertexMap[getStringFromIntVertex(p4)] = 3
-			triangulateVertices(vertices, vertexMap, customEdgeColliders)
+			triangulateVertices(vertices, vertexMap)
 		}
 		duration := time.Since(start)
 
@@ -732,10 +832,9 @@ func TriangulateVerticesTester(testTime bool) {
 			p2 = [3]int{1 * rand.IntN(100), 2 * rand.IntN(100), 0}
 			p3 = [3]int{1 * rand.IntN(100), 5 * rand.IntN(100), 0}
 			p4 = [3]int{5 * rand.IntN(100), 5 * rand.IntN(100), 0}
-			p5 := [3]int{5 * rand.IntN(100), 4 * rand.IntN(100), 0}
-			p6 := [3]int{5 * rand.IntN(100), 1 * rand.IntN(100), 0}
+			p5 = [3]int{5 * rand.IntN(100), 4 * rand.IntN(100), 0}
+			p6 = [3]int{5 * rand.IntN(100), 1 * rand.IntN(100), 0}
 			vertices = [][3]int{p1, p2, p3, p4, p5, p6}
-			customEdgeColliders = [][2][3]float32{}
 			vertexMap = map[string]int{}
 			vertexMap[getStringFromIntVertex(p1)] = 0
 			vertexMap[getStringFromIntVertex(p2)] = 1
@@ -743,7 +842,7 @@ func TriangulateVerticesTester(testTime bool) {
 			vertexMap[getStringFromIntVertex(p4)] = 3
 			vertexMap[getStringFromIntVertex(p5)] = 4
 			vertexMap[getStringFromIntVertex(p6)] = 5
-			triangulateVertices(vertices, vertexMap, customEdgeColliders)
+			triangulateVertices(vertices, vertexMap)
 
 			p1 = [3]int{1 * rand.IntN(100), 1 * rand.IntN(100), 0}
 			p2 = [3]int{1 * rand.IntN(100), 4 * rand.IntN(100), 0}
@@ -751,12 +850,10 @@ func TriangulateVerticesTester(testTime bool) {
 			p4 = [3]int{2 * rand.IntN(100), 5 * rand.IntN(100), 0}
 			p5 = [3]int{1 * rand.IntN(100), 5 * rand.IntN(100), 0}
 			p6 = [3]int{1 * rand.IntN(100), 8 * rand.IntN(100), 0}
-			p7 := [3]int{8 * rand.IntN(100), 8 * rand.IntN(100), 0}
-			p8 := [3]int{8 * rand.IntN(100), 1 * rand.IntN(100), 0}
+			p7 = [3]int{8 * rand.IntN(100), 8 * rand.IntN(100), 0}
+			p8 = [3]int{8 * rand.IntN(100), 1 * rand.IntN(100), 0}
 			vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
 			vertexMap = map[string]int{}
-			customEdgeColliders = [][2][3]float32{}
-			customEdgeColliders = append(customEdgeColliders, [2][3]float32{getMidPoint([3]int{0, 4, 0}, [3]int{0, 5, 0}), getMidPoint(p3, p4)})
 			vertexMap[getStringFromIntVertex(p1)] = 0
 			vertexMap[getStringFromIntVertex(p2)] = 1
 			vertexMap[getStringFromIntVertex(p3)] = 2
@@ -765,7 +862,7 @@ func TriangulateVerticesTester(testTime bool) {
 			vertexMap[getStringFromIntVertex(p6)] = 5
 			vertexMap[getStringFromIntVertex(p7)] = 6
 			vertexMap[getStringFromIntVertex(p8)] = 7
-			triangulateVertices(vertices, vertexMap, customEdgeColliders)
+			triangulateVertices(vertices, vertexMap)
 
 			p1 = [3]int{0, 0, 0}
 			p2 = [3]int{0, 6 * rand.IntN(100), 0}
@@ -777,7 +874,6 @@ func TriangulateVerticesTester(testTime bool) {
 			p8 = [3]int{1 * rand.IntN(100), 0, 0}
 			vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
 			vertexMap = map[string]int{}
-			customEdgeColliders = [][2][3]float32{}
 			vertexMap[getStringFromIntVertex(p1)] = 0
 			vertexMap[getStringFromIntVertex(p2)] = 1
 			vertexMap[getStringFromIntVertex(p3)] = 2
@@ -786,7 +882,7 @@ func TriangulateVerticesTester(testTime bool) {
 			vertexMap[getStringFromIntVertex(p6)] = 5
 			vertexMap[getStringFromIntVertex(p7)] = 6
 			vertexMap[getStringFromIntVertex(p8)] = 7
-			triangulateVertices(vertices, vertexMap, customEdgeColliders)
+			triangulateVertices(vertices, vertexMap)
 		}
 		duration = time.Since(start)
 
@@ -794,6 +890,10 @@ func TriangulateVerticesTester(testTime bool) {
 		fmt.Print(duration)
 		fmt.Println()
 	}
+}
+
+func getDistance(pointA [3]int, pointB[3]int) float32 {
+	return float32(math.Sqrt(math.Pow(float64(pointB[0]-pointA[0]), 2) + math.Pow(float64(pointB[1]-pointA[1]), 2)))
 }
 
 func getMidPoint(pointA [3]int, pointB [3]int) [3]float32 {
@@ -915,6 +1015,23 @@ func EdgeOffsetterTester() {
 	fmt.Println()
 }
 
+func determineIfVertexInTriangle(p0 [3]int, p1 [3]int, p2 [3]int, p [3]int) bool {
+	p0x := float32(p0[0])
+	p0y := float32(p0[1])
+	p1x := float32(p1[0])
+	p1y := float32(p1[1])
+	p2x := float32(p2[0])
+	p2y := float32(p2[1])
+	px := float32(p[0])
+	py := float32(p[1])
+
+	Area := 0.5 *(-p1y*p2x + p0y*(-p1x + p2x) + p0x*(p1y - p2y) + p1x*p2y);
+	s := 1/(2*Area)*(p0y*p2x - p0x*p2y + (p2y - p0y)*px + (p0x - p2x)*py);
+	t := 1/(2*Area)*(p0x*p1y - p0y*p1x + (p0y - p1y)*px + (p1x - p0x)*py);
+
+	return (s >= 0 && t >= 0) && (1-s-t) >= 0
+}
+
 func determineCollision(edge [2][3]float32, otherEdge [2][3]float32) bool {
 	//a = edge[0], b = edge[1], c = otherEdge[0], d = otherEdge[1]
 	var abcOrientation int = determineOrientation(edge[0], edge[1], otherEdge[0])
@@ -1000,8 +1117,10 @@ func DetermineCollisionTester() {
 	fmt.Printf("\nTest Case 3, Expected: True, Got: %t\n", determineCollision([2][3]float32{p1, q1}, [2][3]float32{p2, q2}))
 }
 
-func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[string]int) {
+func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[string]int, map[string][][3]int) {
 	vertSet := hashset.New()
+
+	faceMap := map[string][][3]int{}
 
 	var maxX int = 0
 	var maxY int = 0
@@ -1018,118 +1137,166 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[
 		case 1:
 			switch faceOrientation := face.FaceIndex; faceOrientation {
 			case 0:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 1:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 2:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 3:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 4:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 5:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			default:
 				fmt.Printf("\nError in faceOrientation in GetVerticesFromFaces(), Expected 0-5, Got: %d", faceOrientation)
 			}
 		case 2:
 			switch faceOrientation := face.FaceIndex; faceOrientation {
 			case 0:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 1:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 2:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) + 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 3:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[1][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 4:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) + 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			case 5:
+				newVerts := [][3]int{}
 				newVertex := [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[0][1]) - 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[0][0]) - 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
 				newVertex = [3]float32{float32(face.VoxelCoords[1][0]) + 0.5, float32(face.VoxelCoords[1][1]) + 0.5, float32(face.VoxelCoords[0][2]) - 0.5}
 				vertSet.Add(getStringFromVertex(newVertex))
+				newVerts = append(newVerts, [3]int{int(newVertex[0]*2), int(newVertex[1]*2), int(newVertex[2]*2)})
+				faceMap[getStringFromFace(face)] = newVerts
 			default:
 				fmt.Printf("\nError in faceOrientation in GetVerticesFromFaces(), Expected 0-5, Got: %d", faceOrientation)
 			}
@@ -1156,7 +1323,19 @@ func GetVerticesFromFaces(faces []greedyMesher.Face) ([][3]int, [][][]bool, map[
 		vertMatrix[intVertex[0]][intVertex[1]][intVertex[2]] = true
 		vertMap[getStringFromIntVertex(intVertex)] = index
 	}
-	return vertArray, vertMatrix, vertMap
+	return vertArray, vertMatrix, vertMap, faceMap
+}
+
+func getStringFromFace(face greedyMesher.Face) string {
+	switch cornerCount := len(face.VoxelCoords); cornerCount {
+	case 1:
+		return fmt.Sprintf("%d:%d,%d,%d", face.FaceIndex, face.VoxelCoords[0][0], face.VoxelCoords[0][1], face.VoxelCoords[0][2])
+	case 2:
+		return fmt.Sprintf("%d:%d,%d,%d,%d,%d,%d", face.FaceIndex, face.VoxelCoords[0][0], face.VoxelCoords[0][1], face.VoxelCoords[0][2], face.VoxelCoords[1][0], face.VoxelCoords[1][1], face.VoxelCoords[1][2])
+	default: 
+		fmt.Printf("\nError in getStringFromFace. Expected len(face.VoxelCoords) to be 1 or 2, Got: %d\n", cornerCount)
+		return "404"
+	}
 }
 
 func getStringFromVertex(vertex [3]float32) string {
@@ -1258,10 +1437,10 @@ func ToOBJFile(filename string, vertices, faces [][3]int) {
 	w := io.Writer(file)
 
 	for _, vertex := range vertices {
-		io.WriteString(w, "v" + string(vertex[0]) + string(vertex[1]) + string(vertex[2]) + "\n")
+		io.WriteString(w, "v" + " " + fmt.Sprint(vertex[0]) + " " + fmt.Sprint(vertex[1]) + " " + fmt.Sprint(vertex[2]) + "\n")
 	}
 	io.WriteString(w, "\n")
 	for _, face := range faces {
-		io.WriteString(w, "f" + string(face[0]) + string(face[1]) + string(face[2]) + "\n")
+		io.WriteString(w, "f" + " " + fmt.Sprint(face[0]+1) + " " + fmt.Sprint(face[1]+1) + " " + fmt.Sprint(face[2]+1) + "\n")
 	}
 }
