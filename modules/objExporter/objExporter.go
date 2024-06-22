@@ -35,7 +35,8 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 		switch cornerAmount := len(face.VoxelCoords); cornerAmount {
 		case 1:
 			var customEdgeColliders [][2][3]float32 = [][2][3]float32{}
-			meshFaces = append(meshFaces, triangulateVertices(face.VoxelCoords, vertexMap, customEdgeColliders)...)
+			preppedVertices, preppedVertixMap := prepFaceCoordsForTriangle(face.VoxelCoords, int(face.FaceIndex), vertexMap)
+			meshFaces = append(meshFaces, triangulateVertices(preppedVertices, preppedVertixMap, customEdgeColliders)...)
 		case 2:
 
 		default:
@@ -44,6 +45,90 @@ func GetMeshFacesFromVertices(faces []greedyMesher.Face, vertices [][3]int, vert
 	}
 
 	return meshFaces
+}
+
+func prepFaceCoordsForTriangle(vertices [][3]int, faceOrientation int, vertexMap map[string]int) ([][3]int, map[string]int) {
+	preppedVertices := [][3]int{}
+	preppedVertixMap := map[string]int{}
+
+	switch faceOrientation {
+	case 0:
+		//z is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+			
+		}
+	case 1:
+		//z is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+		}
+	case 2:
+		//x is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+		}
+	case 3:
+		//x is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+		}
+	case 4:
+		//y is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+		}
+	case 5:
+		//y is the same
+		for _, vertex := range vertices {
+			index := vertexMap[getStringFromIntVertex(vertex)]
+		}
+	default:
+		fmt.Printf("\nError, faceOrientation in prepFaceCoordsForTriangle() must be from 0 - 5, Got: %d", faceOrientation)
+	}
+}
+
+func PrepFaceCoordsForTriangleTester() {
+	var p1 [3]int
+	var p2 [3]int
+	var p3 [3]int
+	var p4 [3]int
+	var p5 [3]int
+	var p6 [3]int
+	var p7 [3]int
+	var p8 [3]int
+	var vertices [][3]int
+	var vertexMap map[string]int
+	var result [][3]int
+	var matrixResult map[string]int
+
+	p1 = [3]int{1, 1, 0}
+	p2 = [3]int{1, 4, 0}
+	p3 = [3]int{2, 4, 0}
+	p4 = [3]int{2, 5, 0}
+	p5 = [3]int{1, 5, 0}
+	p6 = [3]int{1, 8, 0}
+	p7 = [3]int{8, 8, 0}
+	p8 = [3]int{8, 1, 0}
+	vertices = [][3]int{p1, p2, p3, p4, p5, p6, p7, p8}
+	vertexMap = map[string]int{}
+	vertexMap[getStringFromIntVertex(p1)] = 0
+	vertexMap[getStringFromIntVertex(p2)] = 1
+	vertexMap[getStringFromIntVertex(p3)] = 2
+	vertexMap[getStringFromIntVertex(p4)] = 3
+	vertexMap[getStringFromIntVertex(p5)] = 4
+	vertexMap[getStringFromIntVertex(p6)] = 5
+	vertexMap[getStringFromIntVertex(p7)] = 6
+	vertexMap[getStringFromIntVertex(p8)] = 7
+
+	fmt.Print("\nTest Case 4\n	Input: ")
+	fmt.Print(vertices)
+	result, matrixResult = prepFaceCoordsForTriangle(vertices, 0, vertexMap)
+	fmt.Print("\n	Result:")
+	fmt.Print(result)
+	fmt.Println()
+	fmt.Print(matrixResult)
+	fmt.Println()
 }
 
 func triangulateVertices(vertices [][3]int, vertexMap map[string]int, customEdgeColliders [][2][3]float32) [][3]int {
